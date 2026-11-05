@@ -8,6 +8,15 @@ from spade.message import Message
 
 
 async def send_json(behaviour, jid, data):
+    """
+    Envia uma mensagem JSON a partir de um comportamento.
+
+    Args:
+        behaviour (spade.behaviour.CyclicBehaviour): Comportamento que faz o
+            envio.
+        jid (str): JID do destinatário.
+        data (dict): Conteúdo da mensagem, serializado para JSON.
+    """
     msg = Message(to=str(jid))
     msg.set_metadata("performative", "inform")
     msg.body = json.dumps(data)
@@ -15,9 +24,24 @@ async def send_json(behaviour, jid, data):
 
 
 class PoliceAgent(Agent):
-    """Viatura de patrulha: só obedece ao dispatcher.
-    Depois de uma ocorrência fica onde terminou, e é daí que
-    o dispatcher a escolhe da próxima vez."""
+    """
+    Viatura de patrulha: só obedece ao dispatcher.
+
+    Depois de uma ocorrência fica onde terminou, e é daí que o dispatcher a
+    escolhe da próxima vez.
+
+    Attributes:
+        environment (Environment | None): Ambiente onde vive. É preenchido
+            por Environment.add_agent.
+        unit_id (str): Identificador da unidade.
+        location (tuple[float, float]): Posição atual.
+        dispatcher_jid (str): JID do dispatcher.
+        speed (float): Velocidade, em unidades de custo por segundo.
+        scene_time (float): Segundos que fica no local.
+        available (bool): True se está livre.
+        current_incident (str | None): Incidente a que responde.
+        cancelled (bool): True se o dispatcher cancelou a missão atual.
+    """
 
     # Preenchido pelo Environment.add_agent
     environment = None
@@ -26,6 +50,18 @@ class PoliceAgent(Agent):
         self, jid, password, unit_id, patrol_location,
         dispatcher_jid, speed=2.0, scene_time=5.0
     ):
+        """
+        Cria a viatura, livre e no ponto de patrulha.
+
+        Args:
+            jid (str): JID XMPP do agente.
+            password (str): Palavra-passe da conta XMPP.
+            unit_id (str): Identificador da unidade.
+            patrol_location (tuple[float, float]): Posição inicial de patrulha.
+            dispatcher_jid (str): JID do dispatcher.
+            speed (float): Velocidade, em unidades de custo por segundo.
+            scene_time (float): Segundos que fica no local.
+        """
         super().__init__(jid, password)
         self.unit_id = unit_id
         self.location = tuple(patrol_location)
@@ -37,8 +73,19 @@ class PoliceAgent(Agent):
         self.cancelled = False
 
     def travel_time(self, origin, destination):
-        """Segundos de viagem. Com ambiente, segue a rota real
-        (estradas cortadas e trânsito); senão, linha reta."""
+        """
+        Calcula o tempo de viagem entre dois pontos.
+
+        Com ambiente, segue a rota real (estradas cortadas e trânsito). Sem
+        ambiente, ou sem rota possível, usa a linha reta.
+
+        Args:
+            origin (tuple[float, float]): Ponto de partida.
+            destination (tuple[float, float]): Ponto de chegada.
+
+        Returns:
+            float: Tempo em segundos.
+        """
         if self.environment is not None:
             needed = self.environment.travel_time(
                 origin, destination, self.speed
@@ -50,6 +97,17 @@ class PoliceAgent(Agent):
         return math.dist(origin, destination) / self.speed
 
     def status_message(self, status, incident_id=None):
+        """
+        Cria a mensagem de estado enviada ao dispatcher.
+
+        Args:
+            status (str): "en_route", "on_scene", "available" ou "rejected".
+            incident_id (str | None): Incidente a que o estado se refere.
+
+        Returns:
+            dict: Mensagem "unit_status", com o estado, a disponibilidade e a
+                localização atual.
+        """
         return {
             "message_type": "unit_status",
             "unit_id": self.unit_id,
@@ -64,8 +122,16 @@ class PoliceAgent(Agent):
         }
 
     async def wait_or_cancel(self, seconds):
-        """Espera 'seconds', mas pára se o dispatcher cancelar.
-        Devolve (terminou_sem_cancelar, segundos_decorridos)."""
+        """
+        Espera um tempo, mas pára se o dispatcher cancelar a missão.
+
+        Args:
+            seconds (float): Tempo a esperar.
+
+        Returns:
+            tuple[bool, float]: (terminou sem ser cancelada, segundos
+                decorridos).
+        """
         elapsed = 0.0
 
         while elapsed < seconds:
@@ -79,8 +145,21 @@ class PoliceAgent(Agent):
         return not self.cancelled, elapsed
 
     class ReceiveOrdersBehaviour(CyclicBehaviour):
+        """
+        Comportamento cíclico que recebe as ordens do dispatcher.
+
+        Aceita "dispatch_order" quando está livre (e recusa se estiver
+        ocupada) e trata "dispatch_cancel".
+
+        Attributes:
+            agent (PoliceAgent): Agente a que o comportamento pertence.
+        """
 
         async def run(self):
+            """
+            Espera uma mensagem durante 1 segundo e trata-a: arranca uma missão ou
+            cancela a atual.
+            """
             msg = await self.receive(timeout=1)
             if msg is None:
                 return
@@ -138,13 +217,35 @@ class PoliceAgent(Agent):
                     print(f"Missão {incident_id} cancelada.")
 
     class MissionBehaviour(OneShotBehaviour):
+        """
+        Comportamento de execução única que cumpre uma missão: ir ao local e
+        ficar lá.
+
+        Attributes:
+            agent (PoliceAgent): Agente a que o comportamento pertence.
+            incident_id (str): Incidente da missão.
+            destination (tuple[float, float]): Local do incidente.
+        """
 
         def __init__(self, incident_id, destination):
+            """
+            Cria a missão.
+
+            Args:
+                incident_id (str): Incidente da missão.
+                destination (tuple[float, float]): Local do incidente.
+            """
             super().__init__()
             self.incident_id = incident_id
             self.destination = destination
 
         async def report(self, status):
+            """
+            Avisa o dispatcher do estado atual da missão.
+
+            Args:
+                status (str): "en_route", "on_scene" ou "available".
+            """
             agent = self.agent
             await send_json(
                 self,
@@ -153,6 +254,13 @@ class PoliceAgent(Agent):
             )
 
         async def run(self):
+            """
+            Cumpre a missão: viaja até ao local e fica lá scene_time segundos. A
+            viatura fica livre onde terminou.
+
+            Se for cancelada a meio da viagem, fica no ponto a que já tinha
+            chegado.
+            """
             agent = self.agent
             start = agent.location
 
@@ -187,5 +295,8 @@ class PoliceAgent(Agent):
             await self.report("available")
 
     async def setup(self):
+        """
+        Arranca o agente e ativa a receção de ordens.
+        """
         print(f"Police {self.unit_id} iniciada.")
         self.add_behaviour(self.ReceiveOrdersBehaviour())
