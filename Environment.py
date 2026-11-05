@@ -30,9 +30,15 @@ class Environment:
 
     Convenção: posições são sempre (x, y) e a matriz acede-se grid[y][x].
     Usa coordenadas inteiras para os agentes.
+
+    roadblocks: lista de (x, y) cortadas desde o início.
+    traffic_level: 0 a 5, aplicado desde o início.
     """
 
-    def __init__(self, width=16, height=16, grid=None, hospitals=None):
+    def __init__(
+        self, width=16, height=16, grid=None, hospitals=None,
+        roadblocks=None, traffic_level=0
+    ):
         if grid is None:
             grid = self.make_city_grid(width, height)
 
@@ -53,6 +59,13 @@ class Environment:
         self.g = nx.Graph()
         self.start_time = time.time()
         self.build_graph()
+
+        # Estado inicial do mundo: estradas cortadas e trânsito
+        for position in (roadblocks or []):
+            self.add_roadblock(position)
+
+        if traffic_level:
+            self.set_traffic(traffic_level)
 
     # ------------------------------------------------------------------
     # Mapa
@@ -102,7 +115,10 @@ class Environment:
 
         return min(self.g.nodes, key=lambda n: math.dist(n, position))
 
+    # ------------------------------------------------------------------
     # Registo de agentes
+    # ------------------------------------------------------------------
+
     async def add_agent(self, kind, agent):
         """Regista o agente no mundo, liga-o ao ambiente e arranca-o.
         kind: 'smartwatch' | 'witness' | 'ambulance' | 'police'"""
@@ -129,8 +145,10 @@ class Environment:
         found.sort(key=lambda item: item[1])
         return found
 
-    
+    # ------------------------------------------------------------------
     # Rotas
+    # ------------------------------------------------------------------
+
     def shortest_path(self, origin, destination):
         start = self.nearest_node(origin)
         end = self.nearest_node(destination)
@@ -154,7 +172,10 @@ class Environment:
         (inf se não houver caminho)."""
         return self.route_cost(origin, destination) / speed
 
+    # ------------------------------------------------------------------
     # Eventos do mundo
+    # ------------------------------------------------------------------
+
     def add_roadblock(self, position):
         """Corta uma estrada. position = (x, y)."""
         x, y = position
@@ -238,7 +259,10 @@ class Environment:
         await self.trigger_accident(watch, position, vitals)
         return position
 
+    # ------------------------------------------------------------------
     # Tempo e visualização
+    # ------------------------------------------------------------------
+
     def timer(self):
         """Segundos desde o início da simulação."""
         return int(time.time() - self.start_time)
@@ -270,3 +294,23 @@ class Environment:
             if self.g.edges[edge].get("weight", 1) > 1
         ]
         return self.grid, self.agents, traffic_edges
+
+
+if __name__ == "__main__":
+    # Teste sem SPADE: python Environment.py
+    env = Environment(16, 16, hospitals=[(0, 0), (12, 12)])
+    print(env.render())
+
+    print("\nCusto (0,0) -> (4,0):", env.route_cost((0, 0), (4, 0)))
+
+    env.add_roadblock((2, 0))
+    print("Com estrada cortada em (2,0):", env.route_cost((0, 0), (4, 0)))
+
+    env.add_roadblock((0, 2))
+    print("Com (0,2) também cortada:", env.route_cost((0, 0), (4, 0)))
+    print("Caminho:", env.shortest_path((0, 0), (4, 0)))
+
+    env.remove_roadblock((0, 2))
+    env.remove_roadblock((2, 0))
+    env.set_traffic(3)
+    print("Com trânsito nível 3:", env.route_cost((0, 0), (12, 12)))

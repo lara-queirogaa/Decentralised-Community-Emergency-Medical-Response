@@ -18,6 +18,8 @@ class PoliceAgent(Agent):
     """Viatura de patrulha: só obedece ao dispatcher.
     Depois de uma ocorrência fica onde terminou, e é daí que
     o dispatcher a escolhe da próxima vez."""
+
+    # Preenchido pelo Environment.add_agent
     environment = None
 
     def __init__(
@@ -35,6 +37,8 @@ class PoliceAgent(Agent):
         self.cancelled = False
 
     def travel_time(self, origin, destination):
+        """Segundos de viagem. Com ambiente, segue a rota real
+        (estradas cortadas e trânsito); senão, linha reta."""
         if self.environment is not None:
             needed = self.environment.travel_time(
                 origin, destination, self.speed
@@ -42,6 +46,7 @@ class PoliceAgent(Agent):
             if not math.isinf(needed):
                 return needed
             print(f"[{self.unit_id}] Sem rota. A usar linha reta.")
+
         return math.dist(origin, destination) / self.speed
 
     def status_message(self, status, incident_id=None):

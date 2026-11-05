@@ -9,15 +9,19 @@ from spade.message import Message
 
 CPR_INSTRUCTIONS = [
     "Deite a vítima de costas numa superfície rígida.",
-    "Coloque as mãos no centro do peito e comprima, "
+    "Coloque as mãos no centro do peito e comprima 5-6 cm, "
     "a um ritmo de 100-120 compressões por minuto.",
-    "30 compressões seguidas de 2 insuflações "
+    "Se tiver formação: 30 compressões seguidas de 2 insuflações "
     "(boca a boca).",
+    "Se não tiver formação: apenas compressões contínuas.",
     "Não pare até chegar a ambulância ou a vítima voltar a respirar."
 ]
 
 
 class DispatcherAgent(Agent):
+
+    # Preenchido no main: dispatcher.environment = env
+    environment = None
 
     def __init__(
         self, jid, password, witnesses, ambulances, police,
@@ -41,20 +45,32 @@ class DispatcherAgent(Agent):
         self.busy_units = {}   # unit_id -> incident_id
         self.incidents = {}    # incident_id -> estado
 
+    def route_distance(self, origin, destination):
+        """Custo do melhor caminho tendo em conta estradas cortadas e
+        trânsito (inf se não houver caminho). Sem ambiente, usa a
+        distância em linha reta."""
+        if self.environment is not None:
+            return self.environment.route_cost(origin, destination)
+
+        return math.dist(origin, destination)
+
     def find_nearest_unit(self, kind, location):
+        """Unidade livre com a rota mais barata até 'location'.
+        Unidades sem rota possível são ignoradas."""
         nearest = None
-        nearest_distance = float("inf")
+        nearest_cost = float("inf")
 
         for unit in self.units[kind]:
             if unit["unit_id"] in self.busy_units:
                 continue
 
-            distance = math.dist(location, unit["location"])
-            if distance < nearest_distance:
-                nearest = unit
-                nearest_distance = distance
+            cost = self.route_distance(unit["location"], location)
 
-        return nearest, nearest_distance
+            if cost < nearest_cost:
+                nearest = unit
+                nearest_cost = cost
+
+        return nearest, nearest_cost
 
     def find_witnesses_by_distance(self, location):
         candidates = []
@@ -176,7 +192,7 @@ class DispatcherAgent(Agent):
                 if unit is None:
                     print(
                         f"[DISPATCHER] Sem {label} disponível "
-                        f"para {incident_id}."
+                        f"(ou sem rota) para {incident_id}."
                     )
                     continue
 
@@ -185,9 +201,11 @@ class DispatcherAgent(Agent):
                     {"unit_id": unit["unit_id"], "jid": unit["jid"]}
                 )
 
+                straight = math.dist(unit["location"], state["location"])
                 print(
                     f"[DISPATCHER] {label} {unit['unit_id']} enviada "
-                    f"(distância: {distance:.2f})."
+                    f"(custo de rota: {distance:.1f}; "
+                    f"linha reta: {straight:.1f})."
                 )
 
                 await self.send_json(

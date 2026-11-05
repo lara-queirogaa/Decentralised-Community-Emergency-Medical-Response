@@ -33,7 +33,13 @@ def jid(name):
 
 
 async def main():
-    env = Environment(16, 16, hospitals=HOSPITALS)
+    # Estado inicial do mundo: hospitais, estradas cortadas, trânsito
+    env = Environment(
+        16, 16,
+        hospitals=HOSPITALS,
+        roadblocks=ROADBLOCKS,
+        traffic_level=TRAFFIC_LEVEL
+    )
 
     witness_info = {
         "jid": jid("witness1"),
@@ -61,6 +67,9 @@ async def main():
         max_witness_distance=5.0,
         cpr_timeout=10
     )
+    # O dispatcher usa o ambiente para escolher a unidade com a
+    # melhor rota (estradas cortadas e trânsito incluídos)
+    dispatcher.environment = env
 
     verification = VerificationAgent(
         jid=jid("verification"),
@@ -132,14 +141,9 @@ async def main():
 
         print("\nTodos os agentes foram iniciados.")
 
-        # Eventos do mundo (opcionais)
-        for position in ROADBLOCKS:
-            env.add_roadblock(position)
-        if TRAFFIC_LEVEL:
-            env.set_traffic(TRAFFIC_LEVEL)
-
         print("\nMapa inicial:")
         print(env.render())
+
         await asyncio.sleep(SECONDS_BEFORE_ACCIDENT)
 
         # O mundo provoca o acidente; o smartwatch deteta-o
