@@ -1,0 +1,58 @@
+{
+  "name": "Sem ambulancias nem policias",
+  "description": "O cenario nao tem nenhuma unidade de socorro. O dispatcher nao tem a quem mandar, mas a orientacao ao transeunte (RCP passo a passo) tem de continuar a funcionar. Tambem testa listas vazias no JSON.",
+
+  "server": { "domain": "localhost", "password": "password123" },
+
+  "map": {
+    "width": 16,
+    "height": 16,
+    "hospitals": [[0, 0], [12, 12]]
+  },
+
+  "world": {
+    "traffic_level": 0,
+    "roadblocks": []
+  },
+
+  "dispatcher": { "max_witness_distance": 5.0, "cpr_timeout": 10 },
+  "verification": { "max_distance": 5.0, "threshold": 0.65 },
+
+  "ambulances": [],
+
+  "police": [],
+
+  "witnesses": [
+    {
+      "witness_id": "witness_001",
+      "name": "witness1",
+      "location": [4, 3],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    }
+  ],
+
+  "smartwatches": [
+    {
+      "sensor_id": "sensor_001",
+      "name": "smartwatch1",
+      "location": [4, 4],
+      "confidence": 0.95
+    }
+  ],
+
+  "accident": {
+    "type": "smartwatch",
+    "smartwatch": "sensor_001",
+    "position": [4, 4],
+    "vitals": { "heart_rate": 0, "breathing": false },
+    "real": true
+  },
+
+  "run": {
+    "seconds_before_accident": 3,
+    "duration_seconds": 12
+  }
+}

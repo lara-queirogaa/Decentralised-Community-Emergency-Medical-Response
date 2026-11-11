@@ -1,0 +1,64 @@
+{
+  "name": "Ambulancia mais proxima bloqueada por estradas cortadas",
+  "description": "A vitima esta a 1.4 em linha reta da ambulancia amb_02, mas as 4 estradas a volta do hospital (12, 12) estao cortadas. Se o dispatcher usar a rota real, tem de escolher amb_01, mais longe mas com caminho. Se usar linha reta, escolhe amb_02 e esta nao tem rota.",
+
+  "server": { "domain": "localhost", "password": "password123" },
+
+  "map": {
+    "width": 16,
+    "height": 16,
+    "hospitals": [[0, 0], [12, 12]]
+  },
+
+  "world": {
+    "traffic_level": 0,
+    "roadblocks": [[11, 12], [13, 12], [12, 11], [12, 13]]
+  },
+
+  "dispatcher": { "max_witness_distance": 5.0, "cpr_timeout": 10 },
+  "verification": { "max_distance": 5.0, "threshold": 0.65 },
+
+  "ambulances": [
+    { "unit_id": "amb_01", "name": "ambulance1", "location": [0, 0] },
+    { "unit_id": "amb_02", "name": "ambulance2", "location": [12, 12] }
+  ],
+
+  "police": [
+    { "unit_id": "pol_01", "name": "police1", "location": [8, 4] },
+    { "unit_id": "pol_02", "name": "police2", "location": [4, 8] }
+  ],
+
+  "witnesses": [
+    {
+      "witness_id": "witness_001",
+      "name": "witness1",
+      "location": [11, 10],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    }
+  ],
+
+  "smartwatches": [
+    {
+      "sensor_id": "sensor_001",
+      "name": "smartwatch1",
+      "location": [11, 11],
+      "confidence": 0.95
+    }
+  ],
+
+  "accident": {
+    "type": "smartwatch",
+    "smartwatch": "sensor_001",
+    "position": [11, 11],
+    "vitals": { "heart_rate": 0, "breathing": false },
+    "real": true
+  },
+
+  "run": {
+    "seconds_before_accident": 3,
+    "duration_seconds": 20
+  }
+}

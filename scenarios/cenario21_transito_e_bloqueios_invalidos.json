@@ -1,0 +1,64 @@
+{
+  "name": "Transito maximo e bloqueios invalidos",
+  "description": "Transito nivel 5 e uma lista de estradas cortadas com 2 validas e 3 invalidas (um edificio, um ponto fora do mapa e um hospital). O ambiente deve ignorar as invalidas sem falhar e as unidades devem chegar ao local na mesma, so que mais devagar.",
+
+  "server": { "domain": "localhost", "password": "password123" },
+
+  "map": {
+    "width": 16,
+    "height": 16,
+    "hospitals": [[0, 0], [12, 12]]
+  },
+
+  "world": {
+    "traffic_level": 5,
+    "roadblocks": [[2, 0], [4, 2], [1, 1], [99, 99], [12, 12]]
+  },
+
+  "dispatcher": { "max_witness_distance": 5.0, "cpr_timeout": 10 },
+  "verification": { "max_distance": 5.0, "threshold": 0.65 },
+
+  "ambulances": [
+    { "unit_id": "amb_01", "name": "ambulance1", "location": [0, 0] },
+    { "unit_id": "amb_02", "name": "ambulance2", "location": [12, 12] }
+  ],
+
+  "police": [
+    { "unit_id": "pol_01", "name": "police1", "location": [8, 4] },
+    { "unit_id": "pol_02", "name": "police2", "location": [4, 8] }
+  ],
+
+  "witnesses": [
+    {
+      "witness_id": "witness_001",
+      "name": "witness1",
+      "location": [4, 3],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    }
+  ],
+
+  "smartwatches": [
+    {
+      "sensor_id": "sensor_001",
+      "name": "smartwatch1",
+      "location": [4, 4],
+      "confidence": 0.95
+    }
+  ],
+
+  "accident": {
+    "type": "smartwatch",
+    "smartwatch": "sensor_001",
+    "position": [4, 4],
+    "vitals": { "heart_rate": 0, "breathing": false },
+    "real": true
+  },
+
+  "run": {
+    "seconds_before_accident": 3,
+    "duration_seconds": 35
+  }
+}

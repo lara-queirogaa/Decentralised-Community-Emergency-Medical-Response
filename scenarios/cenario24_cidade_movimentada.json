@@ -1,0 +1,135 @@
+{
+  "name": "Cidade movimentada - teste de carga",
+  "description": "Muitos agentes ao mesmo tempo: 3 hospitais, 3 ambulancias, 3 policias, 8 testemunhas e 2 smartwatches, com transito nivel 3. So uma vitima. Deve ser despachada uma ambulancia e uma policia, a testemunha mais proxima recusa RCP e a seguinte aceita. Sem erros.",
+
+  "server": { "domain": "localhost", "password": "password123" },
+
+  "map": {
+    "width": 16,
+    "height": 16,
+    "hospitals": [[0, 0], [12, 12], [3, 12]]
+  },
+
+  "world": {
+    "traffic_level": 3,
+    "roadblocks": [[8, 2], [3, 9]]
+  },
+
+  "dispatcher": { "max_witness_distance": 5.0, "cpr_timeout": 10 },
+  "verification": { "max_distance": 5.0, "threshold": 0.65 },
+
+  "ambulances": [
+    { "unit_id": "amb_01", "name": "ambulance1", "location": [0, 0] },
+    { "unit_id": "amb_02", "name": "ambulance2", "location": [12, 12] },
+    { "unit_id": "amb_03", "name": "ambulance3", "location": [3, 12] }
+  ],
+
+  "police": [
+    { "unit_id": "pol_01", "name": "police1", "location": [8, 4] },
+    { "unit_id": "pol_02", "name": "police2", "location": [4, 8] },
+    { "unit_id": "pol_03", "name": "police3", "location": [12, 8] }
+  ],
+
+  "witnesses": [
+    {
+      "witness_id": "witness_001",
+      "name": "witness1",
+      "location": [4, 3],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": false
+    },
+    {
+      "witness_id": "witness_002",
+      "name": "witness2",
+      "location": [6, 4],
+      "confidence": 0.85,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    },
+    {
+      "witness_id": "witness_003",
+      "name": "witness3",
+      "location": [3, 6],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    },
+    {
+      "witness_id": "witness_004",
+      "name": "witness4",
+      "location": [8, 8],
+      "confidence": 0.6,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    },
+    {
+      "witness_id": "witness_005",
+      "name": "witness5",
+      "location": [11, 11],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    },
+    {
+      "witness_id": "witness_006",
+      "name": "witness6",
+      "location": [0, 14],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    },
+    {
+      "witness_id": "witness_007",
+      "name": "witness7",
+      "location": [15, 2],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    },
+    {
+      "witness_id": "witness_008",
+      "name": "witness8",
+      "location": [7, 12],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    }
+  ],
+
+  "smartwatches": [
+    {
+      "sensor_id": "sensor_001",
+      "name": "smartwatch1",
+      "location": [4, 4],
+      "confidence": 0.95
+    },
+    {
+      "sensor_id": "sensor_002",
+      "name": "smartwatch2",
+      "location": [8, 8],
+      "confidence": 0.9
+    }
+  ],
+
+  "accident": {
+    "type": "smartwatch",
+    "smartwatch": "sensor_001",
+    "position": [4, 4],
+    "vitals": { "heart_rate": 0, "breathing": false },
+    "real": true
+  },
+
+  "run": {
+    "seconds_before_accident": 3,
+    "duration_seconds": 30
+  }
+}

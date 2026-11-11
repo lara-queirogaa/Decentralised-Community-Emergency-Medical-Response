@@ -1,0 +1,65 @@
+{
+  "name": "Testemunha reporta paragem - RCP guiado",
+  "description": "Acidente do tipo 2: sem smartwatch, uma testemunha ve a vitima e reporta (0.9 x 0.75 = 0.675, confirmado). O dispatcher envia ajuda e pede RCP a testemunha mais proxima, que e quem reportou. A segunda testemunha nao deve ser contactada.",
+
+  "server": { "domain": "localhost", "password": "password123" },
+
+  "map": {
+    "width": 16,
+    "height": 16,
+    "hospitals": [[0, 0], [12, 12]]
+  },
+
+  "world": {
+    "traffic_level": 0,
+    "roadblocks": []
+  },
+
+  "dispatcher": { "max_witness_distance": 5.0, "cpr_timeout": 10 },
+  "verification": { "max_distance": 5.0, "threshold": 0.65 },
+
+  "ambulances": [
+    { "unit_id": "amb_01", "name": "ambulance1", "location": [0, 0] },
+    { "unit_id": "amb_02", "name": "ambulance2", "location": [12, 12] }
+  ],
+
+  "police": [
+    { "unit_id": "pol_01", "name": "police1", "location": [8, 4] },
+    { "unit_id": "pol_02", "name": "police2", "location": [4, 8] }
+  ],
+
+  "witnesses": [
+    {
+      "witness_id": "witness_001",
+      "name": "witness1",
+      "location": [4, 3],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    },
+    {
+      "witness_id": "witness_002",
+      "name": "witness2",
+      "location": [6, 4],
+      "confidence": 0.9,
+      "detect_on_start": false,
+      "confirm_requests": true,
+      "accept_cpr": true
+    }
+  ],
+
+  "smartwatches": [],
+
+  "accident": {
+    "type": "witness",
+    "position": [4, 4],
+    "vitals": { "heart_rate": 0, "breathing": false },
+    "radius": 5.0
+  },
+
+  "run": {
+    "seconds_before_accident": 3,
+    "duration_seconds": 18
+  }
+}

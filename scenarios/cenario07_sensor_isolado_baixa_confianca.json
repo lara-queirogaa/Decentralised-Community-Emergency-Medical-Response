@@ -1,0 +1,54 @@
+{
+  "name": "Sensor isolado com baixa confianca - acidente real ignorado",
+  "description": "Nao ha testemunhas e o smartwatch tem confianca 0.8 (0.8 x 0.75 = 0.6, abaixo do limiar 0.65). A paragem e REAL mas o sistema trata-a como falso alarme e nao envia ajuda. Mostra o custo do limiar: falso negativo quando nao ha corroboracao.",
+
+  "server": { "domain": "localhost", "password": "password123" },
+
+  "map": {
+    "width": 16,
+    "height": 16,
+    "hospitals": [[0, 0], [12, 12]]
+  },
+
+  "world": {
+    "traffic_level": 0,
+    "roadblocks": []
+  },
+
+  "dispatcher": { "max_witness_distance": 5.0, "cpr_timeout": 10 },
+  "verification": { "max_distance": 5.0, "threshold": 0.65 },
+
+  "ambulances": [
+    { "unit_id": "amb_01", "name": "ambulance1", "location": [0, 0] },
+    { "unit_id": "amb_02", "name": "ambulance2", "location": [12, 12] }
+  ],
+
+  "police": [
+    { "unit_id": "pol_01", "name": "police1", "location": [8, 4] },
+    { "unit_id": "pol_02", "name": "police2", "location": [4, 8] }
+  ],
+
+  "witnesses": [],
+
+  "smartwatches": [
+    {
+      "sensor_id": "sensor_001",
+      "name": "smartwatch1",
+      "location": [4, 4],
+      "confidence": 0.8
+    }
+  ],
+
+  "accident": {
+    "type": "smartwatch",
+    "smartwatch": "sensor_001",
+    "position": [4, 4],
+    "vitals": { "heart_rate": 0, "breathing": false },
+    "real": true
+  },
+
+  "run": {
+    "seconds_before_accident": 3,
+    "duration_seconds": 10
+  }
+}
