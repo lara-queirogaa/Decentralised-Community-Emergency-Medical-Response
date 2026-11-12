@@ -110,8 +110,7 @@ class WitnessAgent(Agent):
             agent = self.agent
             incident_id = str(uuid.uuid4())
 
-            # O acidente pode estar noutro sítio que não onde a
-            # testemunha está.
+            # O acidente pode estar noutro sítio que não onde a testemunha está.
             if agent.accident_location is not None:
                 location = agent.accident_location
             else:
@@ -133,12 +132,6 @@ class WitnessAgent(Agent):
                     round(location[1], 1)
                 ]
             }
-
-            print("\n--- WITNESS ---")
-            print(f"{agent.witness_id}: possível acidente em "
-                  f"{tuple(incident['location'])}.")
-            print(f"Confiança: {agent.confidence:.2f}")
-            print(f"Reputação: {agent.get_reputation():.2f}")
 
             msg = Message(to=str(agent.verification_jid))
             msg.set_metadata("performative", "inform")

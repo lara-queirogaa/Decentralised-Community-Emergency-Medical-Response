@@ -182,9 +182,6 @@ class SmartwatchAgent(Agent):
             else:
                 return
 
-            print("\n--- REPUTAÇÃO DO SMARTWATCH ---")
-            print(f"Reputação: {self.agent.get_reputation():.2f}")
-
     async def setup(self):
         """
         Arranca o agente e ativa a receção de feedback.

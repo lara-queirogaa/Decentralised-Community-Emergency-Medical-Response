@@ -272,7 +272,6 @@ class DispatcherAgent(Agent):
                 print(f"\n[DISPATCHER] Pré-alerta urgente: {incident_id}")
             else:
                 print(
-                    f"\n[DISPATCHER] Incidente confirmado: {incident_id} "
                     f"(pontuação {data.get('verification_score')})"
                 )
 
@@ -516,8 +515,6 @@ class DispatcherAgent(Agent):
             state["cancelled"] = True
 
             print(f"\n[DISPATCHER] CANCELAR alerta: {incident_id}")
-            print("Motivo: falso alarme.")
-
             # As unidades ficam ocupadas até dizerem que estão livres
             # (a ambulância ainda tem de voltar ao hospital).
             for unit in state["units"]:
