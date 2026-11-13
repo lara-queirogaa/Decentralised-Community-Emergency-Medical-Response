@@ -397,8 +397,9 @@ class VerificationAgent(Agent):
 
             Compara a pontuação com o limiar, atualiza as reputações, envia o
             feedback às fontes e informa o dispatcher: um incidente confirmado, ou
-            o cancelamento do pré-alerta no caso de um smartwatch. Uma testemunha
-            que negou o alerta não é penalizada nem recompensada.
+            o cancelamento do pré-alerta no caso de um smartwatch. A testemunha ganha reputação quando a sua resposta coincide com o
+            veredicto final (confirmar um incidente real ou negar um falso
+            alarme) e perde quando discorda dele.
 
             Args:
                 incident (dict): Incidente a decidir.
@@ -428,17 +429,25 @@ class VerificationAgent(Agent):
             if witness_response is not None:
                 witness_id = witness_response["witness_id"]
 
-                # Uma testemunha que negou o alerta de um
-                # smartwatch não é penalizada nem recompensada.
-                if witness_response.get("confirmed"):
-                    agent.record_outcome(witness_id, outcome)
+                # A testemunha acerta quando a sua resposta coincide com o
+                # veredicto final: confirmou e o incidente foi confirmado,
+                # ou negou e foi falso alarme. Acertar conta como "hit",
+                # errar conta como "false_alarm".
+                witness_correct = (
+                    bool(witness_response.get("confirmed")) == confirmed
+                )
+                witness_outcome = (
+                    "confirmed" if witness_correct else "false_alarm"
+                )
 
-                    await self.send_feedback(
-                        witness_jid,
-                        witness_id,
-                        incident_id,
-                        outcome
-                    )
+                agent.record_outcome(witness_id, witness_outcome)
+
+                await self.send_feedback(
+                    witness_jid,
+                    witness_id,
+                    incident_id,
+                    witness_outcome
+                )
 
             if confirmed:
                 print(f"Incidente confirmado: {incident_id}")

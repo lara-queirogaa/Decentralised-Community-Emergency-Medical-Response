@@ -5,7 +5,7 @@ Lê um cenário de um ficheiro JSON, constrói o ambiente e os agentes SPADE
 descritos nele, provoca o acidente (se existir) e corre a simulação.
 
 Utilização:
-    python main.py scenarios/cenario_01_paragem.json
+    python main.py scenarios/cenario01.json
 
 O JSON é a única fonte de verdade de um cenário: mapa, eventos do mundo
 (trânsito e estradas cortadas), parâmetros dos agentes, acidente e duração.
