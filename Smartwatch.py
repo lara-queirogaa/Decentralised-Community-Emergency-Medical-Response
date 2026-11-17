@@ -33,7 +33,7 @@ class SmartwatchAgent(Agent):
     def __init__(
         self, jid, password, sensor_id, location,
         verification_jid, dispatcher_jid, confidence=0.95,
-        vitals=None
+        vitals=None, urgent_threshold=0.9
     ):
         """
         Cria o smartwatch.
@@ -48,6 +48,8 @@ class SmartwatchAgent(Agent):
             confidence (float): Confiança, entre 0 e 1, na deteção.
             vitals (dict | None): Sinais vitais iniciais. Por omissão, uma
                 pessoa saudável (72 bpm e a respirar).
+            urgent_threshold (float): Com esta confiança ou mais, o alerta é
+                urgente e vai logo ao dispatcher (pré-alerta).
         """
         super().__init__(jid, password)
         self.sensor_id = sensor_id
@@ -55,6 +57,7 @@ class SmartwatchAgent(Agent):
         self.verification_jid = verification_jid
         self.dispatcher_jid = dispatcher_jid
         self.confidence = confidence
+        self.urgent_threshold = urgent_threshold
         self.vitals = vitals or {"heart_rate": 72, "breathing": True}
         self.hits = 0
         self.false_alarms = 0
@@ -101,7 +104,7 @@ class SmartwatchAgent(Agent):
                 "source_id": agent.sensor_id,
                 "confidence": agent.confidence,
                 "reputation": agent.get_reputation(),
-                "urgent": agent.confidence >= 0.9,
+                "urgent": agent.confidence >= agent.urgent_threshold,
                 "type": "possible_accident",
                 "vitals": agent.vitals,
                 "location": [

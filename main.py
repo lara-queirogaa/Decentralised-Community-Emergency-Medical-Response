@@ -24,7 +24,10 @@ from Dispatcher import DispatcherAgent
 from Environment import Environment, WITNESS_RADIUS
 from Police import PoliceAgent
 from Smartwatch import SmartwatchAgent
-from Verification import VerificationAgent
+from Verification import (
+    MIN_RELIABILITY, SENSOR_WEIGHT, WITNESS_TIMEOUT, WITNESS_WEIGHT,
+    VerificationAgent
+)
 from Witness import WitnessAgent
 
 
@@ -218,7 +221,11 @@ def build_verification(cfg, witness_infos):
         dispatcher_jid=jid("dispatcher", domain),
         witnesses=witness_infos,
         max_distance=v["max_distance"],
-        threshold=v["threshold"]
+        threshold=v["threshold"],
+        witness_timeout=v.get("witness_timeout", WITNESS_TIMEOUT),
+        witness_weight=v.get("witness_weight", WITNESS_WEIGHT),
+        sensor_weight=v.get("sensor_weight", SENSOR_WEIGHT),
+        min_reliability=v.get("min_reliability", MIN_RELIABILITY)
     )
 
 
@@ -239,7 +246,9 @@ def build_ambulances(cfg):
             password=cfg["server"]["password"],
             unit_id=a["unit_id"],
             hospital_location=pos(a["location"]),
-            dispatcher_jid=jid("dispatcher", domain)
+            dispatcher_jid=jid("dispatcher", domain),
+            speed=a.get("speed", 2.0),
+            scene_time=a.get("scene_time", 5.0)
         )
         for a in cfg.get("ambulances", [])
     ]
@@ -262,7 +271,9 @@ def build_police(cfg):
             password=cfg["server"]["password"],
             unit_id=p["unit_id"],
             patrol_location=pos(p["location"]),
-            dispatcher_jid=jid("dispatcher", domain)
+            dispatcher_jid=jid("dispatcher", domain),
+            speed=p.get("speed", 2.0),
+            scene_time=p.get("scene_time", 5.0)
         )
         for p in cfg.get("police", [])
     ]
@@ -292,7 +303,8 @@ def build_witnesses(cfg):
             confirm_requests=w.get("confirm_requests", True),
             accept_cpr=w.get("accept_cpr", True),
             error_rate=w.get("error_rate", 0.0),
-            error_per_distance=w.get("error_per_distance", 0.0)
+            error_per_distance=w.get("error_per_distance", 0.0),
+            urgent_threshold=w.get("urgent_threshold", 0.9)
         )
         for w in cfg.get("witnesses", [])
     ]
@@ -318,7 +330,8 @@ def build_smartwatches(cfg):
             location=pos(s["location"]),
             verification_jid=jid("verification", domain),
             dispatcher_jid=jid("dispatcher", domain),
-            confidence=s.get("confidence", 0.95)
+            confidence=s.get("confidence", 0.95),
+            urgent_threshold=s.get("urgent_threshold", 0.9)
         )
         for s in cfg.get("smartwatches", [])
     }

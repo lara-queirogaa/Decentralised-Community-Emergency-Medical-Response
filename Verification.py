@@ -12,6 +12,14 @@ from spade.message import Message
 WITNESS_WEIGHT = 0.7
 SENSOR_WEIGHT = 0.3
 
+# Segundos à espera da resposta de uma testemunha antes de decidir só com o
+# smartwatch.
+WITNESS_TIMEOUT = 8.0
+
+# Fiabilidade mínima de uma fonte (com reputação 0). A fiabilidade vai deste
+# valor até 1, quando a reputação é 1.
+MIN_RELIABILITY = 0.5
+
 
 class VerificationAgent(Agent):
     """
@@ -29,6 +37,10 @@ class VerificationAgent(Agent):
         max_distance (float): Distância máxima a que uma testemunha pode
             estar para ser consultada.
         threshold (float): Pontuação mínima para confirmar um incidente.
+        witness_timeout (float): Segundos à espera de uma testemunha.
+        witness_weight (float): Peso base da testemunha.
+        sensor_weight (float): Peso base do smartwatch.
+        min_reliability (float): Fiabilidade com reputação 0.
         stats (dict[str, dict[str, int]]): Contagem de "hits" e
             "false_alarms" por fonte.
         pending (dict[str, dict]): Incidentes à espera da resposta de uma
@@ -47,7 +59,9 @@ class VerificationAgent(Agent):
 
     def __init__(
         self, jid, password, dispatcher_jid,
-        witnesses, max_distance=5.0, threshold=0.65
+        witnesses, max_distance=5.0, threshold=0.65,
+        witness_timeout=WITNESS_TIMEOUT, witness_weight=WITNESS_WEIGHT,
+        sensor_weight=SENSOR_WEIGHT, min_reliability=MIN_RELIABILITY
     ):
         """
         Cria o agente de verificação.
@@ -61,12 +75,22 @@ class VerificationAgent(Agent):
             max_distance (float): Distância máxima a que uma testemunha pode
                 estar para ser consultada.
             threshold (float): Pontuação mínima para confirmar um incidente.
+            witness_timeout (float): Segundos à espera da resposta de uma
+                testemunha antes de decidir só com o smartwatch.
+            witness_weight (float): Peso base da testemunha na pontuação.
+            sensor_weight (float): Peso base do smartwatch na pontuação.
+            min_reliability (float): Fiabilidade de uma fonte com reputação
+                0. A fiabilidade sobe linearmente até 1 com a reputação.
         """
         super().__init__(jid, password)
         self.dispatcher_jid = dispatcher_jid
         self.witnesses = witnesses
         self.max_distance = max_distance
         self.threshold = threshold
+        self.witness_timeout = witness_timeout
+        self.witness_weight = witness_weight
+        self.sensor_weight = sensor_weight
+        self.min_reliability = min_reliability
         self.stats = {}
         self.pending = {}
         self.finalized = set()
@@ -110,6 +134,24 @@ class VerificationAgent(Agent):
         else:
             self.stats[source_id]["false_alarms"] += 1
 
+    def reliability(self, reputation):
+        """
+        Converte uma reputação (0 a 1) na fiabilidade da fonte.
+
+        Vai de min_reliability (reputação 0) até 1 (reputação 1). Com o
+        valor por defeito, 0.5 + 0.5 x reputação.
+
+        Args:
+            reputation (float): Reputação da fonte, entre 0 e 1.
+
+        Returns:
+            float: Fiabilidade, entre min_reliability e 1.
+        """
+        return (
+            self.min_reliability
+            + (1 - self.min_reliability) * reputation
+        )
+
     def find_nearest_witness(self, location):
         """
         Procura a testemunha mais próxima de um local.
@@ -144,7 +186,7 @@ class VerificationAgent(Agent):
         testemunhas, decide e informa o dispatcher e as fontes.
 
         Também dá por terminado o pedido a uma testemunha que não responde em
-        8 segundos, e decide só com o smartwatch.
+        witness_timeout segundos, e decide só com o smartwatch.
 
         Attributes:
             agent (VerificationAgent): Agente a que o comportamento pertence.
@@ -220,7 +262,7 @@ class VerificationAgent(Agent):
             for incident_id, pending in list(
                 agent.pending.items()
             ):
-                if now - pending["sent_at"] >= 8:
+                if now - pending["sent_at"] >= agent.witness_timeout:
                     del agent.pending[incident_id]
 
                     print(
@@ -233,7 +275,7 @@ class VerificationAgent(Agent):
                     sensor_rep = agent.get_reputation(sensor_id)
                     confidence = incident["confidence"]
 
-                    score = confidence * (0.5 + 0.5 * sensor_rep)
+                    score = confidence * agent.reliability(sensor_rep)
 
                     await self.finalize_incident(
                         incident=incident,
@@ -277,7 +319,7 @@ class VerificationAgent(Agent):
             # reputação da própria testemunha.
             if origin == "witness":
                 reputation = agent.get_reputation(source_id)
-                score = confidence * (0.5 + 0.5 * reputation)
+                score = confidence * agent.reliability(reputation)
 
                 print(f"Reputação witness: {reputation:.2f}")
                 print(f"Pontuação final: {score:.3f}")
@@ -298,7 +340,7 @@ class VerificationAgent(Agent):
 
             if witness is None:
                 reputation = agent.get_reputation(source_id)
-                score = confidence * (0.5 + 0.5 * reputation)
+                score = confidence * agent.reliability(reputation)
 
                 print("Não há testemunha próxima.")
                 await self.finalize_incident(
@@ -362,8 +404,8 @@ class VerificationAgent(Agent):
             witness_rep = agent.get_reputation(witness_id)
             witness_conf = float(response.get("confidence", 0.0))
 
-            sensor_reliability = 0.5 + 0.5 * sensor_rep
-            witness_reliability = 0.5 + 0.5 * witness_rep
+            sensor_reliability = agent.reliability(sensor_rep)
+            witness_reliability = agent.reliability(witness_rep)
 
             # Probabilidade de acidente segundo cada fonte
             sensor_p = sensor_conf
@@ -374,8 +416,8 @@ class VerificationAgent(Agent):
                 witness_p = 1 - witness_conf
 
             # Peso = tipo de fonte x fiabilidade
-            sensor_w = SENSOR_WEIGHT * sensor_reliability
-            witness_w = WITNESS_WEIGHT * witness_reliability
+            sensor_w = agent.sensor_weight * sensor_reliability
+            witness_w = agent.witness_weight * witness_reliability
 
             score = (
                 sensor_w * sensor_p + witness_w * witness_p

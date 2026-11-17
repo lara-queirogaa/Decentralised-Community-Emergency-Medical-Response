@@ -47,7 +47,7 @@ class WitnessAgent(Agent):
         self, jid, password, witness_id, location,
         verification_jid, dispatcher_jid=None, confidence=0.9,
         detect_on_start=False, confirm_requests=True, accept_cpr=True,
-        error_rate=0.0, error_per_distance=0.0
+        error_rate=0.0, error_per_distance=0.0, urgent_threshold=0.9
     ):
         """
         Cria a testemunha.
@@ -68,6 +68,8 @@ class WitnessAgent(Agent):
                 enganar ao confirmar ou negar um alerta.
             error_per_distance (float): Probabilidade de erro que se soma por
                 cada unidade de distância à vítima (quem está longe vê pior).
+            urgent_threshold (float): Confiança a partir da qual o alerta que
+                reporta é marcado como urgente.
         """
         super().__init__(jid, password)
         self.witness_id = witness_id
@@ -80,6 +82,7 @@ class WitnessAgent(Agent):
         self.accept_cpr = accept_cpr
         self.error_rate = error_rate
         self.error_per_distance = error_per_distance
+        self.urgent_threshold = urgent_threshold
         self.hits = 0
         self.false_alarms = 0
         self.processed_feedback = set()
@@ -165,7 +168,7 @@ class WitnessAgent(Agent):
                 "source_id": agent.witness_id,
                 "confidence": agent.confidence,
                 "reputation": agent.get_reputation(),
-                "urgent": agent.confidence >= 0.9,
+                "urgent": agent.confidence >= agent.urgent_threshold,
                 "type": "possible_accident",
                 "vitals": agent.vitals,
                 "location": [
