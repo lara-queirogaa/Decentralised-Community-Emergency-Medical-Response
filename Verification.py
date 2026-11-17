@@ -34,7 +34,16 @@ class VerificationAgent(Agent):
         pending (dict[str, dict]): Incidentes à espera da resposta de uma
             testemunha.
         finalized (set[str]): Incidentes já decididos.
+        environment (Environment | None): Ambiente, preenchido no main. É
+            usado só DEPOIS de decidir, para conhecer a verdade do terreno
+            e atualizar as reputações com ela (e não com o próprio
+            veredicto). Sem ambiente, as reputações seguem o veredicto.
+        decisions (list[dict]): Registo de cada decisão, com o veredicto, a
+            pontuação e a verdade do terreno, para medir erros.
     """
+
+    # Preenchido no main: verification.environment = env
+    environment = None
 
     def __init__(
         self, jid, password, dispatcher_jid,
@@ -61,6 +70,7 @@ class VerificationAgent(Agent):
         self.stats = {}
         self.pending = {}
         self.finalized = set()
+        self.decisions = []
 
     def get_reputation(self, source_id):
         """
@@ -397,9 +407,12 @@ class VerificationAgent(Agent):
 
             Compara a pontuação com o limiar, atualiza as reputações, envia o
             feedback às fontes e informa o dispatcher: um incidente confirmado, ou
-            o cancelamento do pré-alerta no caso de um smartwatch. A testemunha ganha reputação quando a sua resposta coincide com o
-            veredicto final (confirmar um incidente real ou negar um falso
-            alarme) e perde quando discorda dele.
+            o cancelamento do pré-alerta no caso de um smartwatch. As
+            reputações seguem a verdade do terreno: a fonte que reportou
+            ganha se o acidente era real, e a testemunha consultada ganha
+            quando a sua resposta coincide com a verdade (confirmar um
+            acidente real ou negar um falso alarme). Sem verdade conhecida,
+            usa-se o veredicto.
 
             Args:
                 incident (dict): Incidente a decidir.
@@ -417,8 +430,27 @@ class VerificationAgent(Agent):
             agent.finalized.add(incident_id)
 
             confirmed = score >= agent.threshold
-            outcome = "confirmed" if confirmed else "false_alarm"
             source_id = incident["source_id"]
+
+            # A reputação mede se a fonte acertou NO MUNDO, não se
+            # concordou com o veredicto (isso era circular: um veredicto
+            # errado castigava quem tinha razão). A verdade vem do
+            # ambiente; sem ela (sem ambiente ou incidente sem acidente
+            # registado), usa-se o veredicto como antes.
+            truth = None
+            if agent.environment is not None:
+                truth = agent.environment.truth_at(incident["location"])
+
+            reference = confirmed if truth is None else truth
+            outcome = "confirmed" if reference else "false_alarm"
+
+            agent.decisions.append({
+                "incident_id": incident_id,
+                "origin": incident.get("origin"),
+                "score": round(score, 3),
+                "verdict": confirmed,
+                "truth": truth
+            })
 
             agent.record_outcome(source_id, outcome)
 
@@ -429,12 +461,10 @@ class VerificationAgent(Agent):
             if witness_response is not None:
                 witness_id = witness_response["witness_id"]
 
-                # A testemunha acerta quando a sua resposta coincide com o
-                # veredicto final: confirmou e o incidente foi confirmado,
-                # ou negou e foi falso alarme. Acertar conta como "hit",
-                # errar conta como "false_alarm".
+                # A testemunha acerta quando a sua resposta coincide com a
+                # referência (a verdade, ou o veredicto se não houver).
                 witness_correct = (
-                    bool(witness_response.get("confirmed")) == confirmed
+                    bool(witness_response.get("confirmed")) == reference
                 )
                 witness_outcome = (
                     "confirmed" if witness_correct else "false_alarm"
@@ -447,6 +477,14 @@ class VerificationAgent(Agent):
                     witness_id,
                     incident_id,
                     witness_outcome
+                )
+
+            if truth is not None:
+                print(
+                    f"Verdade do terreno: "
+                    f"{'acidente real' if truth else 'não havia acidente'}"
+                    f" (veredicto: "
+                    f"{'confirmado' if confirmed else 'rejeitado'})."
                 )
 
             if confirmed:

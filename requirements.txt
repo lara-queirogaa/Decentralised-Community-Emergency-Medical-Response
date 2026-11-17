@@ -1,0 +1,8 @@
+# Testado com Python 3.13 (o SPADE 4 exige Python >= 3.10 e <= 3.14)
+spade>=4.1,<5
+networkx>=3.0
+pygame>=2.5
+
+# O SPADE 4.1.4 usa SQLAlchemy no servidor XMPP embebido, mas não instala o
+# greenlet sozinho: sem ele, "import spade" falha com ModuleNotFoundError.
+greenlet

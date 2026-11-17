@@ -1,4 +1,6 @@
 import json
+import math
+import random
 import uuid
 
 from spade.agent import Agent
@@ -27,6 +29,8 @@ class WitnessAgent(Agent):
         confirm_requests (bool): Resposta a pedidos de verificação quando
             não há ambiente. Com ambiente, a resposta vem do mundo.
         accept_cpr (bool): Se aceita fazer RCP quando o dispatcher pede.
+        error_rate (float): Probabilidade base de se enganar ao verificar.
+        error_per_distance (float): Erro adicional por unidade de distância.
         hits (int): Alertas desta testemunha que foram confirmados.
         false_alarms (int): Alertas desta testemunha que eram falsos.
         processed_feedback (set[str]): Incidentes de que já recebeu
@@ -42,7 +46,8 @@ class WitnessAgent(Agent):
     def __init__(
         self, jid, password, witness_id, location,
         verification_jid, dispatcher_jid=None, confidence=0.9,
-        detect_on_start=False, confirm_requests=True, accept_cpr=True
+        detect_on_start=False, confirm_requests=True, accept_cpr=True,
+        error_rate=0.0, error_per_distance=0.0
     ):
         """
         Cria a testemunha.
@@ -59,6 +64,10 @@ class WitnessAgent(Agent):
             confirm_requests (bool): Resposta a pedidos de verificação quando
                 não há ambiente.
             accept_cpr (bool): Se aceita fazer RCP quando lhe pedem.
+            error_rate (float): Probabilidade base, entre 0 e 1, de se
+                enganar ao confirmar ou negar um alerta.
+            error_per_distance (float): Probabilidade de erro que se soma por
+                cada unidade de distância à vítima (quem está longe vê pior).
         """
         super().__init__(jid, password)
         self.witness_id = witness_id
@@ -69,6 +78,8 @@ class WitnessAgent(Agent):
         self.detect_on_start = detect_on_start
         self.confirm_requests = confirm_requests  # só sem Environment
         self.accept_cpr = accept_cpr
+        self.error_rate = error_rate
+        self.error_per_distance = error_per_distance
         self.hits = 0
         self.false_alarms = 0
         self.processed_feedback = set()
@@ -90,6 +101,36 @@ class WitnessAgent(Agent):
         return (self.hits + 1) / (
             self.hits + self.false_alarms + 2
         )
+
+    def perceive(self, location):
+        """
+        Decide se a testemunha confirma ou nega um alerta no local dado.
+
+        Com ambiente, parte da verdade do mundo, mas pode enganar-se: a
+        probabilidade de erro é error_rate mais error_per_distance vezes a
+        distância à vítima (no máximo 1). Quando se engana, dá a resposta
+        contrária à verdade. Sem ambiente, usa confirm_requests.
+
+        Args:
+            location (tuple[float, float]): Posição do incidente.
+
+        Returns:
+            bool: True se confirma que há um acidente real.
+        """
+        if self.environment is None:
+            return self.confirm_requests
+
+        truth = self.environment.is_real_accident(location)
+        distance = math.dist(self.location, location)
+        p_error = min(
+            1.0, self.error_rate + self.error_per_distance * distance
+        )
+
+        if random.random() < p_error:
+            print(f"[{self.witness_id}] engana-se (p_erro={p_error:.2f}).")
+            return not truth
+
+        return truth
 
     class DetectIncidentBehaviour(OneShotBehaviour):
         """
@@ -171,13 +212,11 @@ class WitnessAgent(Agent):
 
             if message_type == "verify_request":
                 # Com ambiente, a testemunha confirma se o que vê é um
-                # acidente real. Sem ambiente, usa confirm_requests.
-                if agent.environment is not None:
-                    confirmed = agent.environment.is_real_accident(
-                        data.get("location", agent.location)
-                    )
-                else:
-                    confirmed = agent.confirm_requests
+                # acidente real (e pode enganar-se, ver perceive). Sem
+                # ambiente, usa confirm_requests.
+                confirmed = agent.perceive(
+                    data.get("location", agent.location)
+                )
 
                 response = {
                     "message_type": "witness_response",

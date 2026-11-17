@@ -406,6 +406,34 @@ class Environment:
             for accident in self.accidents
         )
 
+    def truth_at(self, position, radius=2.0):
+        """
+        Diz o que realmente aconteceu perto de uma posição (a verdade do
+        terreno), para atualizar reputações sem depender do veredicto.
+
+        Ao contrário de is_real_accident, distingue "não era real" de "não
+        há registo nenhum": incidentes que não vieram de um acidente do
+        mundo (por exemplo, testemunhas que reportam ao arrancar) não têm
+        verdade conhecida.
+
+        Args:
+            position (tuple[float, float]): Posição do incidente.
+            radius (float): Distância máxima ao acidente registado.
+
+        Returns:
+            bool | None: True se há um acidente real perto, False se só há
+                registos de falsos alarmes, None se não há registo nenhum.
+        """
+        nearby = [
+            accident for accident in self.accidents
+            if math.dist(accident["position"], position) <= radius
+        ]
+
+        if not nearby:
+            return None
+
+        return any(accident["real"] for accident in nearby)
+
     async def trigger_smartwatch_accident(
         self, smartwatch, vitals=None, position=None, real=True
     ):
@@ -440,7 +468,7 @@ class Environment:
         smartwatch.add_behaviour(smartwatch.DetectIncidentBehaviour())
 
     async def trigger_witness_accident(
-        self, position, vitals=None, radius=WITNESS_RADIUS
+        self, position, vitals=None, radius=WITNESS_RADIUS, real=True
     ):
         """
         Provoca um acidente do tipo 2: é uma testemunha que o vê e reporta.
@@ -452,6 +480,8 @@ class Environment:
             position (tuple[int, int]): Onde acontece o acidente.
             vitals (dict | None): Sinais vitais que a testemunha observa.
             radius (float): Alcance de visão das testemunhas.
+            real (bool): False simula uma testemunha que se engana e
+                reporta um acidente que não existe.
 
         Returns:
             WitnessAgent | None: A testemunha que reportou, ou None se
@@ -459,7 +489,7 @@ class Environment:
         """
         position = self.nearest_node(position)
         self.accidents.append(
-            {"position": position, "real": True, "kind": "witness"}
+            {"position": position, "real": real, "kind": "witness"}
         )
 
         nearby = self.get_nearby("witness", position, radius)

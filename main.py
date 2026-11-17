@@ -16,6 +16,7 @@ script, sem mexer no código.
 import argparse
 import asyncio
 import json
+import random
 from pathlib import Path
 
 from Ambulance import AmbulanceAgent
@@ -289,7 +290,9 @@ def build_witnesses(cfg):
             confidence=w.get("confidence", 0.9),
             detect_on_start=w.get("detect_on_start", False),
             confirm_requests=w.get("confirm_requests", True),
-            accept_cpr=w.get("accept_cpr", True)
+            accept_cpr=w.get("accept_cpr", True),
+            error_rate=w.get("error_rate", 0.0),
+            error_per_distance=w.get("error_per_distance", 0.0)
         )
         for w in cfg.get("witnesses", [])
     ]
@@ -383,7 +386,8 @@ async def trigger_accident(env, cfg, smartwatches):
 
     Com type "smartwatch", o smartwatch da vítima deteta o acidente (e, se
     real for false, é um falso alarme). Com type "witness", é uma testemunha
-    que o vê e reporta.
+    que o vê e reporta (com real false, a testemunha engana-se e reporta um
+    acidente que não existe).
 
     Args:
         env (Environment): O ambiente.
@@ -411,7 +415,8 @@ async def trigger_accident(env, cfg, smartwatches):
         await env.trigger_witness_accident(
             position,
             vitals,
-            radius=accident.get("radius", WITNESS_RADIUS)
+            radius=accident.get("radius", WITNESS_RADIUS),
+            real=accident.get("real", True)
         )
 
 
@@ -466,6 +471,12 @@ async def run(cfg):
     """
     validate_scenario(cfg)
 
+    # Com "seed" no JSON a simulação é reproduzível (trânsito, ruído das
+    # testemunhas). Sem seed, cada corrida é diferente.
+    seed = cfg.get("run", {}).get("seed")
+    if seed is not None:
+        random.seed(seed)
+
     print(f"\n=== Cenário: {cfg.get('name', 'sem nome')} ===")
     if cfg.get("description"):
         print(cfg["description"])
@@ -481,6 +492,12 @@ async def run(cfg):
     police = build_police(cfg)
     witnesses = build_witnesses(cfg)
     smartwatches = build_smartwatches(cfg)
+
+    # O dispatcher usa o ambiente para escolher unidades pela rota real
+    # (trânsito e estradas cortadas) e a verificação para conhecer a verdade
+    # do terreno quando atualiza as reputações.
+    dispatcher.environment = env
+    verification.environment = env
 
     try:
         await start_agents(
