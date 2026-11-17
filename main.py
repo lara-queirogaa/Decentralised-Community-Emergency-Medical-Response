@@ -305,7 +305,10 @@ def build_witnesses(cfg):
             accept_cpr=w.get("accept_cpr", True),
             error_rate=w.get("error_rate", 0.0),
             error_per_distance=w.get("error_per_distance", 0.0),
-            urgent_threshold=w.get("urgent_threshold", 0.9)
+            urgent_threshold=w.get("urgent_threshold", 0.9),
+            response_delay=w.get("response_delay", 0.0),
+            response_delay_jitter=w.get("response_delay_jitter", 0.0),
+            cpr_delay=w.get("cpr_delay", 0.0)
         )
         for w in cfg.get("witnesses", [])
     ]
@@ -517,7 +520,7 @@ async def run(cfg, metrics=None):
     verification.environment = env
 
     if metrics is not None:
-        metrics.attach(env, verification)
+        metrics.attach(env, verification, dispatcher)
 
     try:
         await start_agents(

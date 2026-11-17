@@ -99,6 +99,9 @@ class MetricsRecorder:
         env (Environment | None): Ambiente da corrida (a verdade do mundo).
         verification (VerificationAgent | None): Agente de verificação, de
             onde vêm as decisões tomadas.
+        cpr_timeout (float | None): Segundos que o dispatcher espera por
+            uma resposta a um pedido de RCP. Respostas mais tardias são
+            ignoradas por ele, e por isso também aqui.
         t_end (float | None): Instante em que a corrida terminou.
     """
 
@@ -115,6 +118,7 @@ class MetricsRecorder:
         self.events = []
         self.env = None
         self.verification = None
+        self.cpr_timeout = None
         self.t_end = None
         self.unit_by_jid = {}
         self._t0 = time.monotonic()
@@ -182,16 +186,20 @@ class MetricsRecorder:
                 (self.now(), bare(msg.sender), bare(msg.to), data)
             )
 
-    def attach(self, env, verification):
+    def attach(self, env, verification, dispatcher=None):
         """
-        Liga o recolhedor ao ambiente e à verificação da corrida.
+        Liga o recolhedor ao ambiente, à verificação e ao dispatcher.
 
         Args:
             env (Environment): O ambiente (verdade do mundo e unidades).
             verification (VerificationAgent): O agente de verificação.
+            dispatcher (DispatcherAgent | None): O dispatcher, de onde se
+                lê o cpr_timeout.
         """
         self.env = env
         self.verification = verification
+        if dispatcher is not None:
+            self.cpr_timeout = dispatcher.cpr_timeout
 
     def mark_end(self):
         """
@@ -250,6 +258,7 @@ class MetricsRecorder:
                 "alert": None, "orders": [], "available": [],
                 "ambulance_arrival": None, "cpr_accepted": None,
                 "verdict": None, "cpr_requested": False,
+                "cpr_requests": {},
                 "cancelled": False, "recalled": 0, "messages": 0,
                 "alert_data": None,
             })
@@ -282,9 +291,20 @@ class MetricsRecorder:
 
             elif kind == "cpr_request":
                 info["cpr_requested"] = True
+                info["cpr_requests"][to] = t
 
             elif kind == "cpr_response":
-                if data.get("accepted") and info["cpr_accepted"] is None:
+                asked = info["cpr_requests"].get(sender)
+                late = (
+                    self.cpr_timeout is not None and asked is not None
+                    and t - asked >= self.cpr_timeout
+                )
+                # Uma resposta depois do cpr_timeout é ignorada pelo
+                # dispatcher, por isso não conta como RCP aceite.
+                if (
+                    data.get("accepted") and not late
+                    and info["cpr_accepted"] is None
+                ):
                     info["cpr_accepted"] = t
 
             elif kind == "reputation_feedback":

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import math
 import random
@@ -31,6 +32,10 @@ class WitnessAgent(Agent):
         accept_cpr (bool): Se aceita fazer RCP quando o dispatcher pede.
         error_rate (float): Probabilidade base de se enganar ao verificar.
         error_per_distance (float): Erro adicional por unidade de distância.
+        urgent_threshold (float): Confiança a partir da qual o alerta é urgente.
+        response_delay (float): Segundos a confirmar ou negar um alerta.
+        response_delay_jitter (float): Variação aleatória desse atraso.
+        cpr_delay (float): Segundos a responder a um pedido de RCP.
         hits (int): Alertas desta testemunha que foram confirmados.
         false_alarms (int): Alertas desta testemunha que eram falsos.
         processed_feedback (set[str]): Incidentes de que já recebeu
@@ -47,7 +52,8 @@ class WitnessAgent(Agent):
         self, jid, password, witness_id, location,
         verification_jid, dispatcher_jid=None, confidence=0.9,
         detect_on_start=False, confirm_requests=True, accept_cpr=True,
-        error_rate=0.0, error_per_distance=0.0, urgent_threshold=0.9
+        error_rate=0.0, error_per_distance=0.0, urgent_threshold=0.9,
+        response_delay=0.0, response_delay_jitter=0.0, cpr_delay=0.0
     ):
         """
         Cria a testemunha.
@@ -70,6 +76,13 @@ class WitnessAgent(Agent):
                 cada unidade de distância à vítima (quem está longe vê pior).
             urgent_threshold (float): Confiança a partir da qual o alerta que
                 reporta é marcado como urgente.
+            response_delay (float): Segundos que demora a confirmar ou
+                negar um alerta (tempo de reação de uma pessoa).
+            response_delay_jitter (float): Variação aleatória, em segundos,
+                somada ou subtraída ao atraso (entre -jitter e +jitter).
+            cpr_delay (float): Segundos que demora a responder a um pedido
+                de RCP. Se for maior que o cpr_timeout do dispatcher, a
+                resposta chega tarde e é ignorada.
         """
         super().__init__(jid, password)
         self.witness_id = witness_id
@@ -83,6 +96,9 @@ class WitnessAgent(Agent):
         self.error_rate = error_rate
         self.error_per_distance = error_per_distance
         self.urgent_threshold = urgent_threshold
+        self.response_delay = response_delay
+        self.response_delay_jitter = response_delay_jitter
+        self.cpr_delay = cpr_delay
         self.hits = 0
         self.false_alarms = 0
         self.processed_feedback = set()
@@ -104,6 +120,23 @@ class WitnessAgent(Agent):
         return (self.hits + 1) / (
             self.hits + self.false_alarms + 2
         )
+
+    def reaction_time(self, base):
+        """
+        Calcula quanto tempo a testemunha demora a reagir.
+
+        É o atraso base mais uma variação aleatória entre -jitter e +jitter,
+        nunca negativo.
+
+        Args:
+            base (float): Atraso base, em segundos.
+
+        Returns:
+            float: Segundos a esperar antes de responder.
+        """
+        jitter = self.response_delay_jitter
+        delay = base + random.uniform(-jitter, jitter) if jitter else base
+        return max(0.0, delay)
 
     def perceive(self, location):
         """
@@ -221,6 +254,11 @@ class WitnessAgent(Agent):
                     data.get("location", agent.location)
                 )
 
+                # Tempo de reação: uma pessoa não responde instantaneamente.
+                await asyncio.sleep(
+                    agent.reaction_time(agent.response_delay)
+                )
+
                 response = {
                     "message_type": "witness_response",
                     "incident_id": data["incident_id"],
@@ -244,6 +282,8 @@ class WitnessAgent(Agent):
                 print(f"Confirma: {confirmed}")
 
             elif message_type == "cpr_request":
+                await asyncio.sleep(agent.reaction_time(agent.cpr_delay))
+
                 response = {
                     "message_type": "cpr_response",
                     "incident_id": data["incident_id"],
