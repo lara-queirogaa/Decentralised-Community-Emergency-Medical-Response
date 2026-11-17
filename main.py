@@ -22,6 +22,7 @@ from pathlib import Path
 from Ambulance import AmbulanceAgent
 from Dispatcher import DispatcherAgent
 from Environment import Environment, WITNESS_RADIUS
+from metrics import MetricsRecorder
 from Police import PoliceAgent
 from Smartwatch import SmartwatchAgent
 from Verification import (
@@ -471,12 +472,15 @@ async def stop_agents(agents):
 # Pontos de entrada
 # ----------------------------------------------------------------------
 
-async def run(cfg):
+async def run(cfg, metrics=None):
     """
     Constrói e corre a simulação completa de um cenário.
 
     Args:
         cfg (dict): O cenário lido.
+        metrics (MetricsRecorder | None): Se for dado, fica ligado ao
+            ambiente e à verificação para calcular as métricas no fim.
+            Quem o chama é que o instala (install) e guarda os resultados.
 
     Raises:
         KeyError: Se faltar uma secção obrigatória no cenário.
@@ -512,6 +516,9 @@ async def run(cfg):
     dispatcher.environment = env
     verification.environment = env
 
+    if metrics is not None:
+        metrics.attach(env, verification)
+
     try:
         await start_agents(
             env, dispatcher, verification,
@@ -530,6 +537,9 @@ async def run(cfg):
 
         await trigger_accident(env, cfg, smartwatches)
         await wait_for_end(env, cfg)
+
+        if metrics is not None:
+            metrics.mark_end()
     finally:
         await stop_agents([dispatcher, verification] + env.all_agents())
 
@@ -544,14 +554,33 @@ def main():
     parser.add_argument(
         "scenario", type=Path, help="caminho do JSON do cenário"
     )
+    parser.add_argument(
+        "--metrics", type=Path, metavar="PASTA",
+        help="guarda as métricas da corrida em PASTA/runs.csv e "
+             "PASTA/incidents.csv"
+    )
     args = parser.parse_args()
 
     cfg = load_scenario(args.scenario)
 
+    recorder = None
+    if args.metrics:
+        recorder = MetricsRecorder(
+            args.scenario.stem, cfg.get("run", {}).get("seed")
+        )
+        recorder.install()
+
     try:
-        asyncio.run(run(cfg))
+        asyncio.run(run(cfg, metrics=recorder))
     except KeyboardInterrupt:
         print("\nTerminado.")
+    finally:
+        if recorder is not None:
+            recorder.uninstall()
+            result = recorder.save(args.metrics)
+            print(f"\nMétricas guardadas em {args.metrics}/")
+            for key, value in result["run"].items():
+                print(f"  {key}: {value}")
 
 
 if __name__ == "__main__":
