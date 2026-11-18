@@ -29,6 +29,7 @@ import json
 import math
 import os
 import random
+import re
 import socket
 import subprocess
 import sys
@@ -179,6 +180,7 @@ class Recorder:
         self.inbox = collections.deque()          # mensagens por tratar
         self.log = collections.deque(maxlen=500)  # linhas de texto (stdout)
         self.msg_count = 0
+        self.metrics = None                       # MetricsRecorder (métricas ao vivo)
         self.t0 = time.monotonic()
 
     def now(self):
@@ -706,6 +708,8 @@ class App:
         self.clock = pygame.time.Clock()
         self.static, self.static_key = None, None
         self.show_log = True
+        self.show_metrics = True
+        self.metrics_cache = None      # (instante, resumo) para não recalcular a cada quadro
         self.map_rect = pygame.Rect(0, 0, 10, 10)
         self.cs = 32
         self.flash = None
@@ -719,7 +723,10 @@ class App:
         self.strip = 54
         self.panel_w = max(330, min(410, int(W * .3)))
         self.panel = pygame.Rect(W - self.panel_w, self.head, self.panel_w, H - self.head - self.foot)
-        area = pygame.Rect(0, self.head + self.strip, W - self.panel_w, H - self.head - self.strip - self.foot)
+        # coluna à esquerda do mapa reservada ao cartão de métricas (tecla M)
+        self.side_w = 190 if (self.show_metrics and self.rec.metrics is not None) else 0
+        area = pygame.Rect(self.side_w, self.head + self.strip,
+                           W - self.panel_w - self.side_w, H - self.head - self.strip - self.foot)
         env = self.rec.env
         gw, gh = env.width, env.height
         avail = area.inflate(-40, -34)
@@ -897,8 +904,87 @@ class App:
         self.draw_header(now)
         self.draw_panel(now)
         self.draw_footer()
+        self.draw_metrics(now)
         if self.vis.finished_at is not None:
             self.draw_end_banner()
+
+    # --- métricas ao vivo ----------------------------------------------------
+    def live_summary(self, now):
+        """Resumo das métricas, recalculado no máximo 2 vezes por segundo."""
+        m = self.rec.metrics
+        if m is None:
+            return None
+        cached = self.metrics_cache
+        if cached is not None and now - cached[0] < 0.5:
+            return cached[1]
+        try:
+            run = m.summary()["run"]
+        except Exception:
+            return cached[1] if cached else None
+        self.metrics_cache = (now, run)
+        return run
+
+    def draw_metrics(self, now):
+        """Cartão com as métricas principais, à esquerda do mapa (tecla M)."""
+        if not self.side_w:
+            return
+        run = self.live_summary(now)
+        if run is None:
+            return
+        scr = self.screen
+        x = 10
+        y0 = self.head + self.strip + 10
+        w = self.side_w - 20
+        r = pygame.Rect(x, y0, w, 410)
+        rrect(scr, PANEL, r, 12)
+        rrect(scr, LINE, r, 12, 2)
+        text(scr, "MÉTRICAS", 12, DIM, (x + 12, y0 + 10), bold=True)
+        text(scr, "ao vivo", 11, DIM, (r.right - 12, y0 + 11), "topright")
+        pygame.draw.line(scr, LINE, (x + 12, y0 + 28), (r.right - 12, y0 + 28))
+
+        def num(v, unit="", digits=1):
+            if v is None:
+                return "–"
+            return f"{v:.{digits}f}{unit}"
+
+        y = y0 + 38
+        text(scr, "Decisões da verificação", 11, DIM, (x + 12, y))
+        y += 18
+        # TP / FP / FN / TN, cada um com a sua cor
+        cells = [("TP", run["tp"], GREEN), ("FP", run["fp"], AMBER),
+                 ("FN", run["fn"], RED), ("TN", run["tn"], GREY)]
+        cw = (w - 24) // 4
+        for i, (label, val, col) in enumerate(cells):
+            cx = x + 12 + i * cw
+            text(scr, str(val), 20, col, (cx + cw // 2, y), "midtop", True)
+            text(scr, label, 11, DIM, (cx + cw // 2, y + 26), "midtop")
+        y += 52
+        pygame.draw.line(scr, LINE, (x + 12, y), (r.right - 12, y))
+        y += 10
+
+        rows = [
+            ("Precisão", num(run["precision"], "", 2), TEXT),
+            ("Recall", num(run["recall"], "", 2), TEXT),
+            ("Até ao despacho", num(run["mean_t_dispatch_s"], " s"), TEXT),
+            ("Até à ambulância", num(run["mean_t_ambulance_arrival_s"], " s"), TEXT),
+            ("Unidades gastas", str(run["wasted_dispatches"]),
+             AMBER if run["wasted_dispatches"] else TEXT),
+            ("Sem ambulância", str(run["real_unserved"]),
+             RED if run["real_unserved"] else TEXT),
+            ("Mensagens", str(run["messages_total"]), BLUE),
+        ]
+        for label, val, col in rows:
+            text(scr, fit(label, 12, w - 80), 12, DIM, (x + 12, y))
+            text(scr, val, 13, col, (r.right - 12, y - 1), "topright", True)
+            y += 26
+
+        y += 2
+        pygame.draw.line(scr, LINE, (x + 12, y), (r.right - 12, y))
+        note = ("Tempos em segundos simulados. TP/FN comparam o veredicto com o que "
+                "realmente aconteceu. 'Sem ambulância' conta acidentes reais a que "
+                "ainda não chegou ambulância.")
+        for i, ln in enumerate(wrap(note, 10, w - 24)[:6]):
+            text(scr, ln, 10, DIM, (x + 12, y + 8 + i * 13))
 
     def draw_hq(self, surf, now):
         """Os dois agentes que não vivem no mapa: Dispatcher e Verificação."""
@@ -1021,7 +1107,7 @@ class App:
                 pygame.draw.line(scr, AMBER, (c[0] - 11, c[1]), (c[0] + 11, c[1]), 5)
             r = text(scr, label, 12, DIM, (x + 32, cy), "midleft")
             x = r.right + 18
-        hint = "ESC sair   R reiniciar   S captura   L log"
+        hint = "ESC sair   R reiniciar   S captura   L log   M métricas"
         text(scr, hint, 12, DIM, (self.W - 14, cy), "midright")
 
     # --- painel lateral ----------------------------------------------------
@@ -1228,14 +1314,23 @@ def menu():
     size = tuple(int(v) for v in ARGS.size.lower().split("x"))
     scr = pygame.display.set_mode(size, pygame.RESIZABLE)
     pygame.display.set_caption("Resposta Médica de Emergência — Escolher cenário")
+    # os cenários numerados e, a seguir, as 3 experiências do relatório (E1, E2, E3)
     files = sorted((HERE / "scenarios").glob("*.json"))
+    # as experiências ordenam-se pelo número que têm no nome ("Experiência 1: normal")
+    files += sorted((HERE / "experiments").glob("*.json"),
+                    key=lambda f: re.findall(r"\d+", f.read_text(encoding="utf-8")[:200]) or ["9"])
     items = []
     for f in files:
         try:
             c = json.loads(f.read_text(encoding="utf-8"))
         except Exception:
             continue
-        items.append((f, c.get("name", f.stem), c.get("description", "")))
+        if f.parent.name == "experiments":
+            found = re.search(r"(\d+)", c.get("name", ""))
+            label = f"E{found.group(1)}" if found else "E"
+        else:
+            label = f.stem.split("_")[0].replace("cenario", "")
+        items.append((f, c.get("name", f.stem), c.get("description", ""), label))
     clock = pygame.time.Clock()
     scroll = 0
     cols, ch, gap = 2, 92, 14
@@ -1264,13 +1359,12 @@ def menu():
         text(scr, "Escolhe um cenário para ver a simulação no mapa", 14, DIM, (100, 56))
         clip = scr.get_clip()
         scr.set_clip(pygame.Rect(0, 100, W, view + 20))
-        for i, (f, name, desc) in enumerate(items):
+        for i, (f, name, desc, num) in enumerate(items):
             col, row = i % cols, i // cols
             r = pygame.Rect(40 + col * (cw + gap), 110 + row * (ch + gap) - scroll, cw, ch)
             hover = r.collidepoint(mouse) and 100 < mouse[1] < H - 20
             rrect(scr, (32, 46, 74) if hover else CARD, r, 12)
             rrect(scr, BLUE if hover else LINE, r, 12, 2)
-            num = f.stem.split("_")[0].replace("cenario", "")
             circle(scr, RED if hover else (60, 80, 120), (r.x + 30, r.y + 30), 17)
             text(scr, num, 14, WHITE, (r.x + 30, r.y + 30), "center", True)
             text(scr, fit(name, 15, cw - 80, True), 15, TEXT, (r.x + 58, r.y + 12), bold=True)
@@ -1299,10 +1393,16 @@ async def run_gui(cfg, path):
     import main as sim
     rec = Recorder()
     install_hooks(rec, sim, fix_dispatcher=not ARGS.original)
+    # métricas ao vivo: o MetricsRecorder regista as mesmas mensagens e o main.run liga-o
+    # ao ambiente, à verificação e ao dispatcher
+    from metrics import MetricsRecorder
+    metrics = MetricsRecorder(scenario=path.stem, seed=cfg.get("run", {}).get("seed"))
+    metrics.install()
+    rec.metrics = metrics
     vis = Visual(rec)
     app = App(cfg, path, rec, vis)
     rec.t0 = time.monotonic()
-    task = asyncio.create_task(sim.run(cfg))
+    task = asyncio.create_task(sim.run(cfg, metrics=metrics))
     shots = sorted(float(s) for s in ARGS.shot.split(",") if s.strip())
     result = "quit"
     started = time.monotonic()
@@ -1322,6 +1422,8 @@ async def run_gui(cfg, path):
                     break
                 if ev.key == pygame.K_l:
                     app.show_log = not app.show_log
+                if ev.key == pygame.K_m:
+                    app.show_metrics = not app.show_metrics
                 if ev.key == pygame.K_s:
                     app.save_shot(f"{path.stem}_{int(now):03d}s.png")
         else:
@@ -1366,6 +1468,7 @@ async def run_gui(cfg, path):
         await asyncio.wait_for(task, timeout=15)
     except BaseException:
         pass
+    metrics.uninstall()
     sys.stdout = sys.__stdout__
     return result
 
