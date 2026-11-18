@@ -1,0 +1,394 @@
+
+=== Cenário: Experiência 2: hostil ===
+Mesma cidade e meios que a experiência 1, mas com informação má: 3 incidentes reais e 3 falsos alarmes (alguns com confiança alta), sensores mais fracos e testemunhas pouco fiáveis (erro 25%, confiança 0.75, mais lentas). Põe à prova a verificação: falsos positivos e falsos negativos.
+DispatcherAgent iniciado.
+VerificationAgent iniciado.
+Ambulance amb_01 iniciada.
+Ambulance amb_02 iniciada.
+Ambulance amb_03 iniciada.
+Ambulance amb_04 iniciada.
+Ambulance amb_05 iniciada.
+Ambulance amb_06 iniciada.
+Police pol_01 iniciada.
+Police pol_02 iniciada.
+Police pol_03 iniciada.
+Police pol_04 iniciada.
+Witness witness_001 iniciado.
+Witness witness_002 iniciado.
+Witness witness_003 iniciado.
+Witness witness_004 iniciado.
+Smartwatch sensor_001 iniciado.
+Smartwatch sensor_002 iniciado.
+Smartwatch sensor_003 iniciado.
+Smartwatch sensor_004 iniciado.
+Smartwatch sensor_005 iniciado.
+Smartwatch sensor_006 iniciado.
+
+Todos os agentes foram iniciados.
+
+Mapa inicial:
+A . . . . . . . P . . . . . . A
+. # # . . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . S . . . . . . S . . . .
+. . . . W . . . P . . W . . . .
+. # # . . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . . . . . . . . . . . . S
+. . . S P . . . . . . . P . . .
+. # # W . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . . . . . S . . . . . . .
+. . . . . . . . W . . . A . . .
+. # # . . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . . . . S . . . . . . . .
+
+[ENV] Smartwatch deteta acidente em (4, 3) (real).
+
+--- SMARTWATCH ---
+Incidente: 68fb0c7f-1b15-4925-a9d7-5e74034087c6
+Confiança: 0.75
+Reputação: 0.50
+Urgente: False
+
+--- VERIFICATION ---
+Incidente: 68fb0c7f-1b15-4925-a9d7-5e74034087c6
+Origem: smartwatch
+A pedir verificação a witness_001; distância: 1.00.
+
+[ENV] Smartwatch deteta acidente em (11, 3) (FALSO ALARME).
+
+--- SMARTWATCH ---
+Incidente: 30be64ab-587f-4df4-af9e-6bdb088e29d2
+Confiança: 0.95
+Reputação: 0.50
+Urgente: True
+Pré-alerta urgente enviado ao dispatcher.
+
+--- VERIFICATION ---
+Incidente: 30be64ab-587f-4df4-af9e-6bdb088e29d2
+Origem: smartwatch
+A pedir verificação a witness_002; distância: 1.00.
+
+[DISPATCHER] Pré-alerta urgente: 30be64ab-587f-4df4-af9e-6bdb088e29d2
+[DISPATCHER] Ambulância amb_03 enviada (custo de rota: 7.0; linha reta: 5.0).
+[DISPATCHER] Polícia pol_01 enviada (custo de rota: 4.0; linha reta: 3.2).
+[DISPATCHER] Vítima sem pulso e sem respiração. A procurar testemunha para RCP.
+[DISPATCHER] A pedir RCP a witness_002 (distância: 1.00).
+
+--- AMBULANCE amb_03 ---
+Ordem recebida para o incidente 30be64ab-587f-4df4-af9e-6bdb088e29d2.
+
+--- POLICE pol_01 ---
+Ordem recebida para o incidente 30be64ab-587f-4df4-af9e-6bdb088e29d2.
+[amb_03] A caminho do local.
+[pol_01] A caminho do local.
+[DISPATCHER] Unidade amb_03: en_route.
+[DISPATCHER] Unidade pol_01: en_route.
+
+[ENV] Smartwatch deteta acidente em (3, 8) (real).
+
+--- SMARTWATCH ---
+Incidente: 41e3174e-f27d-42a1-94bf-9515611bd36a
+Confiança: 0.65
+Reputação: 0.50
+Urgente: False
+
+--- VERIFICATION ---
+Incidente: 41e3174e-f27d-42a1-94bf-9515611bd36a
+Origem: smartwatch
+A pedir verificação a witness_003; distância: 1.00.
+[pol_01] Chegou ao local.
+[DISPATCHER] Unidade pol_01: on_scene.
+
+--- WITNESS ---
+Pedido recebido: 68fb0c7f-1b15-4925-a9d7-5e74034087c6
+Confirma: True
+
+--- RESULTADO DA VERIFICAÇÃO ---
+Reputação smartwatch: 0.50
+Reputação witness: 0.50
+Pontuação final: 0.750
+Limiar: 0.65
+Testemunha confirmou: True
+Verdade do terreno: acidente real (veredicto: confirmado).
+Incidente confirmado: 68fb0c7f-1b15-4925-a9d7-5e74034087c6
+Reputação de sensor_001: 0.67
+Reputação de witness_001: 0.67
+
+--- REPUTAÇÃO DA WITNESS ---
+Reputação: 0.67
+(pontuação 0.75)
+[DISPATCHER] Ambulância amb_01 enviada (custo de rota: 7.0; linha reta: 5.0).
+[DISPATCHER] Polícia pol_02 enviada (custo de rota: 5.0; linha reta: 5.0).
+[DISPATCHER] Vítima sem pulso e sem respiração. A procurar testemunha para RCP.
+[DISPATCHER] A pedir RCP a witness_001 (distância: 1.00).
+
+--- AMBULANCE amb_01 ---
+Ordem recebida para o incidente 68fb0c7f-1b15-4925-a9d7-5e74034087c6.
+
+--- POLICE pol_02 ---
+Ordem recebida para o incidente 68fb0c7f-1b15-4925-a9d7-5e74034087c6.
+[amb_01] A caminho do local.
+[pol_02] A caminho do local.
+[DISPATCHER] Unidade amb_01: en_route.
+[DISPATCHER] Unidade pol_02: en_route.
+
+--- WITNESS ---
+witness_001: a iniciar RCP. Instruções:
+  - Deite a vítima de costas numa superfície rígida.
+  - Coloque as mãos no centro do peito e comprima 5-6 cm, a um ritmo de 100-120 compressões por minuto.
+  - Se tiver formação: 30 compressões seguidas de 2 insuflações (boca a boca).
+  - Se não tiver formação: apenas compressões contínuas.
+  - Não pare até chegar a ambulância ou a vítima voltar a respirar.
+[DISPATCHER] witness_001 aceitou fazer RCP em 68fb0c7f-1b15-4925-a9d7-5e74034087c6.
+
+[ENV] Smartwatch deteta acidente em (8, 11) (FALSO ALARME).
+
+--- SMARTWATCH ---
+Incidente: f0999438-b7f4-4799-b3f3-d4304ee22fa1
+Confiança: 0.85
+Reputação: 0.50
+Urgente: False
+
+--- VERIFICATION ---
+Incidente: f0999438-b7f4-4799-b3f3-d4304ee22fa1
+Origem: smartwatch
+A pedir verificação a witness_004; distância: 1.00.
+[amb_03] Chegou ao local.
+[DISPATCHER] Unidade amb_03: on_scene.
+
+--- WITNESS ---
+Pedido recebido: 30be64ab-587f-4df4-af9e-6bdb088e29d2
+Confirma: False
+
+--- RESULTADO DA VERIFICAÇÃO ---
+Reputação smartwatch: 0.50
+Reputação witness: 0.50
+Pontuação final: 0.460
+Limiar: 0.65
+Testemunha confirmou: False
+Verdade do terreno: não havia acidente (veredicto: rejeitado).
+Falso alarme: 30be64ab-587f-4df4-af9e-6bdb088e29d2
+Reputação de sensor_002: 0.33
+Reputação de witness_002: 0.67
+
+[DISPATCHER] CANCELAR alerta: 30be64ab-587f-4df4-af9e-6bdb088e29d2
+[DISPATCHER] Cancelamento enviado a amb_03.
+[DISPATCHER] Cancelamento enviado a pol_01.
+
+--- AMBULANCE amb_03 ---
+Missão 30be64ab-587f-4df4-af9e-6bdb088e29d2 cancelada. A regressar ao hospital.
+
+--- POLICE pol_01 ---
+Missão 30be64ab-587f-4df4-af9e-6bdb088e29d2 cancelada.
+[pol_01] Livre em (11.00, 3.00).
+[DISPATCHER] Unidade pol_01: available.
+
+[ENV] Smartwatch deteta acidente em (15, 7) (real).
+
+--- SMARTWATCH ---
+Incidente: d3e12b7d-1e81-4037-8c87-19dd84d12ca4
+Confiança: 0.70
+Reputação: 0.50
+Urgente: False
+
+--- VERIFICATION ---
+Incidente: d3e12b7d-1e81-4037-8c87-19dd84d12ca4
+Origem: smartwatch
+Não há testemunha próxima.
+Verdade do terreno: acidente real (veredicto: rejeitado).
+Falso alarme: d3e12b7d-1e81-4037-8c87-19dd84d12ca4
+Reputação de sensor_005: 0.67
+[amb_03] A regressar ao hospital.
+[DISPATCHER] Unidade amb_03: returning.
+[pol_02] Chegou ao local.
+[DISPATCHER] Unidade pol_02: on_scene.
+[amb_01] Chegou ao local.
+[DISPATCHER] Unidade amb_01: on_scene.
+
+--- WITNESS ---
+Pedido recebido: 41e3174e-f27d-42a1-94bf-9515611bd36a
+Confirma: True
+
+--- RESULTADO DA VERIFICAÇÃO ---
+Reputação smartwatch: 0.50
+Reputação witness: 0.50
+Pontuação final: 0.720
+Limiar: 0.65
+Testemunha confirmou: True
+Verdade do terreno: acidente real (veredicto: confirmado).
+Incidente confirmado: 41e3174e-f27d-42a1-94bf-9515611bd36a
+Reputação de sensor_003: 0.67
+Reputação de witness_003: 0.67
+
+--- REPUTAÇÃO DA WITNESS ---
+Reputação: 0.67
+(pontuação 0.72)
+[DISPATCHER] Ambulância amb_04 enviada (custo de rota: 11.0; linha reta: 8.5).
+[DISPATCHER] Polícia pol_03 enviada (custo de rota: 9.0; linha reta: 9.0).
+
+--- AMBULANCE amb_04 ---
+Ordem recebida para o incidente 41e3174e-f27d-42a1-94bf-9515611bd36a.
+
+--- POLICE pol_03 ---
+Ordem recebida para o incidente 41e3174e-f27d-42a1-94bf-9515611bd36a.
+[amb_04] A caminho do local.
+[pol_03] A caminho do local.
+[DISPATCHER] Unidade amb_04: en_route.
+[DISPATCHER] Unidade pol_03: en_route.
+
+[ENV] Smartwatch deteta acidente em (7, 15) (FALSO ALARME).
+
+--- SMARTWATCH ---
+Incidente: e64fe639-e530-4834-b5f0-ad98984458df
+Confiança: 0.90
+Reputação: 0.50
+Urgente: True
+Pré-alerta urgente enviado ao dispatcher.
+
+--- VERIFICATION ---
+Incidente: e64fe639-e530-4834-b5f0-ad98984458df
+Origem: smartwatch
+A pedir verificação a witness_004; distância: 3.16.
+
+[DISPATCHER] Pré-alerta urgente: e64fe639-e530-4834-b5f0-ad98984458df
+[DISPATCHER] Ambulância amb_02 enviada (custo de rota: 8.0; linha reta: 5.8).
+[DISPATCHER] Polícia pol_01 enviada (custo de rota: 16.0; linha reta: 12.6).
+
+--- AMBULANCE amb_02 ---
+Ordem recebida para o incidente e64fe639-e530-4834-b5f0-ad98984458df.
+
+--- POLICE pol_01 ---
+Ordem recebida para o incidente e64fe639-e530-4834-b5f0-ad98984458df.
+[amb_02] A caminho do local.
+[pol_01] A caminho do local.
+[DISPATCHER] Unidade amb_02: en_route.
+[DISPATCHER] Unidade pol_01: en_route.
+
+--- WITNESS ---
+witness_002: a iniciar RCP. Instruções:
+  - Deite a vítima de costas numa superfície rígida.
+  - Coloque as mãos no centro do peito e comprima 5-6 cm, a um ritmo de 100-120 compressões por minuto.
+  - Se tiver formação: 30 compressões seguidas de 2 insuflações (boca a boca).
+  - Se não tiver formação: apenas compressões contínuas.
+  - Não pare até chegar a ambulância ou a vítima voltar a respirar.
+
+--- REPUTAÇÃO DA WITNESS ---
+Reputação: 0.67
+
+--- WITNESS ---
+witness_002: RCP cancelada pelo dispatcher (falso alarme).
+
+--- WITNESS ---
+Pedido recebido: f0999438-b7f4-4799-b3f3-d4304ee22fa1
+Confirma: False
+
+--- RESULTADO DA VERIFICAÇÃO ---
+Reputação smartwatch: 0.50
+Reputação witness: 0.50
+Pontuação final: 0.430
+Limiar: 0.65
+Testemunha confirmou: False
+Verdade do terreno: não havia acidente (veredicto: rejeitado).
+Falso alarme: f0999438-b7f4-4799-b3f3-d4304ee22fa1
+Reputação de sensor_004: 0.33
+Reputação de witness_004: 0.67
+[amb_03] No hospital. Disponível.
+[DISPATCHER] Unidade amb_03: available.
+
+--- WITNESS ---
+Pedido recebido: e64fe639-e530-4834-b5f0-ad98984458df
+Confirma: False
+
+--- REPUTAÇÃO DA WITNESS ---
+Reputação: 0.67
+
+--- RESULTADO DA VERIFICAÇÃO ---
+Reputação smartwatch: 0.50
+Reputação witness: 0.67
+Pontuação final: 0.431
+Limiar: 0.65
+Testemunha confirmou: False
+Verdade do terreno: não havia acidente (veredicto: rejeitado).
+Falso alarme: e64fe639-e530-4834-b5f0-ad98984458df
+Reputação de sensor_006: 0.33
+Reputação de witness_004: 0.75
+
+--- REPUTAÇÃO DA WITNESS ---
+Reputação: 0.75
+
+[DISPATCHER] CANCELAR alerta: e64fe639-e530-4834-b5f0-ad98984458df
+[DISPATCHER] Cancelamento enviado a amb_02.
+[DISPATCHER] Cancelamento enviado a pol_01.
+
+--- AMBULANCE amb_02 ---
+Missão e64fe639-e530-4834-b5f0-ad98984458df cancelada. A regressar ao hospital.
+
+--- POLICE pol_01 ---
+Missão e64fe639-e530-4834-b5f0-ad98984458df cancelada.
+[amb_02] A regressar ao hospital.
+[pol_01] Livre em (9.40, 7.80).
+[DISPATCHER] Unidade amb_02: returning.
+[DISPATCHER] Unidade pol_01: available.
+[pol_02] Livre em (4.00, 3.00).
+[DISPATCHER] Unidade pol_02: available.
+[pol_03] Chegou ao local.
+[DISPATCHER] Unidade pol_03: on_scene.
+[amb_01] A regressar ao hospital.
+[DISPATCHER] Unidade amb_01: returning.
+[amb_04] Chegou ao local.
+[DISPATCHER] Unidade amb_04: on_scene.
+[amb_02] No hospital. Disponível.
+[DISPATCHER] Unidade amb_02: available.
+[amb_01] No hospital. Disponível.
+[DISPATCHER] Unidade amb_01: available.
+[pol_03] Livre em (3.00, 8.00).
+[DISPATCHER] Unidade pol_03: available.
+[amb_04] A regressar ao hospital.
+[DISPATCHER] Unidade amb_04: returning.
+[amb_04] No hospital. Disponível.
+[DISPATCHER] Unidade amb_04: available.
+
+Mapa final:
+A . . . . . . . P . . . . . . A
+. # # . . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . S . . . . . . S . . . .
+. . . . W . . . . . . W . . . .
+. # # . . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . . . . . . . . . . . . S
+. . . S . . . . . P . . . . . .
+. # # W . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . . . . . S . . . . . . .
+. . . . . . . . W . . . A . . .
+. # # . . # # . . # # . . # # .
+. # # . . # # . . # # . . # # .
+. . . . . . . S . . . . . . . .
+
+Métricas guardadas em /home/claude/proj/Decentralised-Community-Emergency-Medical-Response-master/resultados/raw/hostil/verification.threshold=0.65/seed5/
+  scenario: cenario
+  seed: 5
+  duration_s: 27.3
+  incidents: 6
+  tp: 2
+  fp: 0
+  fn: 1
+  tn: 3
+  unknown: 0
+  undetected: 0
+  precision: 1.0
+  recall: 0.667
+  mean_t_verdict_s: 2.665
+  mean_t_dispatch_s: 3.998
+  mean_t_ambulance_arrival_s: 8.515
+  mean_t_cpr_accepted_s: 4.316
+  wasted_dispatches: 4
+  wasted_busy_s: 22.067
+  recalled_dispatches: 4
+  real_cancelled: 0
+  real_unserved: 1
+  messages_total: 76

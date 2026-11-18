@@ -1,0 +1,2 @@
+scenario,seed,duration_s,incidents,tp,fp,fn,tn,unknown,undetected,precision,recall,mean_t_verdict_s,mean_t_dispatch_s,mean_t_ambulance_arrival_s,mean_t_cpr_accepted_s,wasted_dispatches,wasted_busy_s,recalled_dispatches,real_cancelled,real_unserved,messages_total
+cenario,1,29.7,6,4,0,0,2,0,0,1.0,1.0,1.148,0.955,9.37,1.704,0,0.0,0,0,2,56

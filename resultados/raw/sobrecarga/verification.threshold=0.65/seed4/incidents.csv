@@ -1,0 +1,7 @@
+scenario,seed,incident_id,origin,source_id,urgent,truth,verdict,classification,score,t_verdict_s,t_dispatch_s,t_ambulance_dispatch_s,t_ambulance_arrival_s,t_cpr_accepted_s,cpr_requested,cancelled,wasted_dispatches,wasted_busy_s,recalled_dispatches,real_cancelled,messages
+cenario,4,2bc8951d,smartwatch,sensor_002,False,real,confirmed,TP,0.835,2.997,2.998,2.998,12.54,,False,False,0,0.0,0,False,14
+cenario,4,366acf03,smartwatch,sensor_001,True,real,rejected,FN,0.39,1.984,0.001,0.001,,2.23,True,True,0,0.0,2,True,19
+cenario,4,4656c745,smartwatch,sensor_003,False,real,confirmed,TP,0.85,2.549,2.549,2.549,12.601,3.034,True,False,0,0.0,0,False,12
+cenario,4,4765a4c5,smartwatch,sensor_006,False,false,rejected,TN,0.303,2.053,,,,,False,False,0,0.0,0,False,5
+cenario,4,85007f0c,smartwatch,sensor_005,True,real,confirmed,TP,0.675,0.0,0.0,,,0.957,True,False,0,0.0,0,False,10
+cenario,4,c883b0f7,smartwatch,sensor_004,False,false,rejected,TN,0.33,2.977,,,,,False,False,0,0.0,0,False,5

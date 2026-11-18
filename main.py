@@ -2,7 +2,7 @@
 Lançador da simulação de resposta médica de emergência descentralizada.
 
 Lê um cenário de um ficheiro JSON, constrói o ambiente e os agentes SPADE
-descritos nele, provoca o acidente (se existir) e corre a simulação.
+descritos nele, provoca os acidentes (se existirem) e corre a simulação.
 
 Utilização:
     python main.py scenarios/cenario01.json
@@ -86,6 +86,27 @@ def load_scenario(path):
         return json.load(f)
 
 
+def accident_list(cfg):
+    """
+    Devolve os acidentes de um cenário, como lista.
+
+    Um cenário pode ter um só acidente ("accident") ou vários
+    ("accidents"). Cada acidente pode ter "at": os segundos, a contar do
+    primeiro acidente, a que acontece (por defeito 0).
+
+    Args:
+        cfg (dict): O cenário lido.
+
+    Returns:
+        list[dict]: Os acidentes, vazia se não houver nenhum.
+    """
+    if cfg.get("accidents"):
+        return list(cfg["accidents"])
+    if cfg.get("accident"):
+        return [cfg["accident"]]
+    return []
+
+
 def validate_scenario(cfg):
     """
     Verifica se o cenário tem as secções obrigatórias e se é coerente.
@@ -95,31 +116,33 @@ def validate_scenario(cfg):
 
     Raises:
         KeyError: Se faltar uma secção obrigatória.
-        ValueError: Se o tipo de acidente for inválido ou se o acidente
-            referir um smartwatch que não existe.
+        ValueError: Se o tipo de acidente for inválido, se algum acidente
+            referir um smartwatch que não existe ou se "at" for negativo.
     """
     for key in SECCOES_OBRIGATORIAS:
         if key not in cfg:
             raise KeyError(f"O cenário não tem a secção '{key}'.")
 
-    accident = cfg.get("accident")
-    if not accident:
-        return
+    sensor_ids = {s["sensor_id"] for s in cfg.get("smartwatches", [])}
 
-    tipo = accident.get("type")
-    if tipo not in TIPOS_ACIDENTE:
-        raise ValueError(
-            f"Tipo de acidente inválido: '{tipo}'. "
-            f"Usa um de {TIPOS_ACIDENTE}."
-        )
+    for accident in accident_list(cfg):
+        tipo = accident.get("type")
+        if tipo not in TIPOS_ACIDENTE:
+            raise ValueError(
+                f"Tipo de acidente inválido: '{tipo}'. "
+                f"Usa um de {TIPOS_ACIDENTE}."
+            )
 
-    if tipo == "smartwatch":
-        sensor_ids = {s["sensor_id"] for s in cfg.get("smartwatches", [])}
-        if accident.get("smartwatch") not in sensor_ids:
+        if tipo == "smartwatch" and (
+            accident.get("smartwatch") not in sensor_ids
+        ):
             raise ValueError(
                 f"O acidente refere um smartwatch desconhecido: "
                 f"'{accident.get('smartwatch')}'."
             )
+
+        if accident.get("at", 0) < 0:
+            raise ValueError("O campo 'at' de um acidente não pode ser negativo.")
 
 
 # ----------------------------------------------------------------------
@@ -397,9 +420,9 @@ def apply_world_events(env, cfg):
         env.set_traffic(world["traffic_level"])
 
 
-async def trigger_accident(env, cfg, smartwatches):
+async def trigger_one_accident(env, accident, smartwatches):
     """
-    Provoca o acidente do cenário, se existir.
+    Provoca um acidente.
 
     Com type "smartwatch", o smartwatch da vítima deteta o acidente (e, se
     real for false, é um falso alarme). Com type "witness", é uma testemunha
@@ -408,16 +431,10 @@ async def trigger_accident(env, cfg, smartwatches):
 
     Args:
         env (Environment): O ambiente.
-        cfg (dict): O cenário lido.
+        accident (dict): O acidente, tal como vem do JSON.
         smartwatches (dict[str, SmartwatchAgent]): Os smartwatches,
             indexados por sensor_id.
     """
-    accident = cfg.get("accident")
-
-    if not accident:
-        print("\nSem acidente neste cenário.")
-        return
-
     position = pos(accident["position"])
     vitals = accident.get("vitals")
 
@@ -435,6 +452,36 @@ async def trigger_accident(env, cfg, smartwatches):
             radius=accident.get("radius", WITNESS_RADIUS),
             real=accident.get("real", True)
         )
+
+
+async def trigger_accident(env, cfg, smartwatches):
+    """
+    Provoca os acidentes do cenário, se existirem.
+
+    Cada acidente acontece "at" segundos depois do primeiro (0 por
+    defeito), por ordem. Só regressa depois de provocar o último, por isso
+    run.duration_seconds conta a partir daí.
+
+    Args:
+        env (Environment): O ambiente.
+        cfg (dict): O cenário lido.
+        smartwatches (dict[str, SmartwatchAgent]): Os smartwatches,
+            indexados por sensor_id.
+    """
+    accidents = accident_list(cfg)
+
+    if not accidents:
+        print("\nSem acidente neste cenário.")
+        return
+
+    clock = asyncio.get_running_loop().time
+    start = clock()
+
+    for accident in sorted(accidents, key=lambda a: a.get("at", 0)):
+        wait = accident.get("at", 0) - (clock() - start)
+        if wait > 0:
+            await asyncio.sleep(wait)
+        await trigger_one_accident(env, accident, smartwatches)
 
 
 async def wait_for_end(env, cfg):

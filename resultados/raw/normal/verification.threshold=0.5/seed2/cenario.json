@@ -1,0 +1,331 @@
+{
+  "name": "Experiência 1: normal",
+  "description": "Cidade bem coberta (6 ambulâncias, 4 polícias), sem trânsito nem estradas cortadas. 6 incidentes de smartwatch, 5 reais e 1 falso alarme, com testemunhas fiáveis (erro 5%, confiança 0.85). Serve de referência.",
+  "server": {
+    "domain": "localhost",
+    "password": "password123"
+  },
+  "map": {
+    "width": 16,
+    "height": 16,
+    "hospitals": [
+      [
+        0,
+        0
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        15,
+        0
+      ]
+    ]
+  },
+  "dispatcher": {
+    "max_witness_distance": 5.0,
+    "cpr_timeout": 10
+  },
+  "verification": {
+    "max_distance": 4.5,
+    "threshold": 0.5
+  },
+  "world": {
+    "traffic_level": 0,
+    "roadblocks": []
+  },
+  "ambulances": [
+    {
+      "unit_id": "amb_01",
+      "name": "ambulance1",
+      "location": [
+        0,
+        0
+      ]
+    },
+    {
+      "unit_id": "amb_02",
+      "name": "ambulance2",
+      "location": [
+        12,
+        12
+      ]
+    },
+    {
+      "unit_id": "amb_03",
+      "name": "ambulance3",
+      "location": [
+        15,
+        0
+      ]
+    },
+    {
+      "unit_id": "amb_04",
+      "name": "ambulance4",
+      "location": [
+        0,
+        0
+      ]
+    },
+    {
+      "unit_id": "amb_05",
+      "name": "ambulance5",
+      "location": [
+        12,
+        12
+      ]
+    },
+    {
+      "unit_id": "amb_06",
+      "name": "ambulance6",
+      "location": [
+        15,
+        0
+      ]
+    }
+  ],
+  "police": [
+    {
+      "unit_id": "pol_01",
+      "name": "police1",
+      "location": [
+        8,
+        4
+      ]
+    },
+    {
+      "unit_id": "pol_02",
+      "name": "police2",
+      "location": [
+        4,
+        8
+      ]
+    },
+    {
+      "unit_id": "pol_03",
+      "name": "police3",
+      "location": [
+        12,
+        8
+      ]
+    },
+    {
+      "unit_id": "pol_04",
+      "name": "police4",
+      "location": [
+        8,
+        0
+      ]
+    }
+  ],
+  "witnesses": [
+    {
+      "witness_id": "witness_001",
+      "name": "witness1",
+      "location": [
+        4,
+        4
+      ],
+      "accept_cpr": true,
+      "confidence": 0.85,
+      "error_rate": 0.05,
+      "error_per_distance": 0.02,
+      "response_delay": 2.0,
+      "response_delay_jitter": 1.0,
+      "cpr_delay": 1.0
+    },
+    {
+      "witness_id": "witness_002",
+      "name": "witness2",
+      "location": [
+        11,
+        4
+      ],
+      "accept_cpr": true,
+      "confidence": 0.85,
+      "error_rate": 0.05,
+      "error_per_distance": 0.02,
+      "response_delay": 2.0,
+      "response_delay_jitter": 1.0,
+      "cpr_delay": 1.0
+    },
+    {
+      "witness_id": "witness_003",
+      "name": "witness3",
+      "location": [
+        3,
+        9
+      ],
+      "accept_cpr": true,
+      "confidence": 0.85,
+      "error_rate": 0.05,
+      "error_per_distance": 0.02,
+      "response_delay": 2.0,
+      "response_delay_jitter": 1.0,
+      "cpr_delay": 1.0
+    },
+    {
+      "witness_id": "witness_004",
+      "name": "witness4",
+      "location": [
+        8,
+        12
+      ],
+      "accept_cpr": true,
+      "confidence": 0.85,
+      "error_rate": 0.05,
+      "error_per_distance": 0.02,
+      "response_delay": 2.0,
+      "response_delay_jitter": 1.0,
+      "cpr_delay": 1.0
+    }
+  ],
+  "smartwatches": [
+    {
+      "sensor_id": "sensor_001",
+      "name": "smartwatch1",
+      "location": [
+        4,
+        3
+      ],
+      "confidence": 0.95
+    },
+    {
+      "sensor_id": "sensor_002",
+      "name": "smartwatch2",
+      "location": [
+        11,
+        3
+      ],
+      "confidence": 0.8
+    },
+    {
+      "sensor_id": "sensor_003",
+      "name": "smartwatch3",
+      "location": [
+        3,
+        8
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sensor_id": "sensor_004",
+      "name": "smartwatch4",
+      "location": [
+        8,
+        11
+      ],
+      "confidence": 0.7
+    },
+    {
+      "sensor_id": "sensor_005",
+      "name": "smartwatch5",
+      "location": [
+        15,
+        7
+      ],
+      "confidence": 0.9
+    },
+    {
+      "sensor_id": "sensor_006",
+      "name": "smartwatch6",
+      "location": [
+        7,
+        15
+      ],
+      "confidence": 0.75
+    }
+  ],
+  "accidents": [
+    {
+      "type": "smartwatch",
+      "smartwatch": "sensor_001",
+      "position": [
+        4,
+        3
+      ],
+      "vitals": {
+        "heart_rate": 0,
+        "breathing": false
+      },
+      "real": true,
+      "at": 0
+    },
+    {
+      "type": "smartwatch",
+      "smartwatch": "sensor_002",
+      "position": [
+        11,
+        3
+      ],
+      "vitals": {
+        "heart_rate": 45,
+        "breathing": true
+      },
+      "real": true,
+      "at": 1.5
+    },
+    {
+      "type": "smartwatch",
+      "smartwatch": "sensor_003",
+      "position": [
+        3,
+        8
+      ],
+      "vitals": {
+        "heart_rate": 0,
+        "breathing": false
+      },
+      "real": true,
+      "at": 3
+    },
+    {
+      "type": "smartwatch",
+      "smartwatch": "sensor_004",
+      "position": [
+        8,
+        11
+      ],
+      "vitals": {
+        "heart_rate": 72,
+        "breathing": true
+      },
+      "real": false,
+      "at": 4.5
+    },
+    {
+      "type": "smartwatch",
+      "smartwatch": "sensor_005",
+      "position": [
+        15,
+        7
+      ],
+      "vitals": {
+        "heart_rate": 0,
+        "breathing": false
+      },
+      "real": true,
+      "at": 6
+    },
+    {
+      "type": "smartwatch",
+      "smartwatch": "sensor_006",
+      "position": [
+        7,
+        15
+      ],
+      "vitals": {
+        "heart_rate": 45,
+        "breathing": true
+      },
+      "real": true,
+      "at": 7.5
+    }
+  ],
+  "run": {
+    "seconds_before_accident": 2,
+    "duration_seconds": 17,
+    "seed": 2
+  }
+}
