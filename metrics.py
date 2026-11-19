@@ -124,10 +124,7 @@ class MetricsRecorder:
         self._t0 = time.monotonic()
         self._original_send = None
 
-    # ------------------------------------------------------------------
     # Captura
-    # ------------------------------------------------------------------
-
     def now(self):
         """
         Segundos desde que o recolhedor foi criado.
@@ -207,10 +204,7 @@ class MetricsRecorder:
         """
         self.t_end = self.now()
 
-    # ------------------------------------------------------------------
     # Cálculo
-    # ------------------------------------------------------------------
-
     def _units(self):
         """
         Mapa JID -> (tipo, unit_id) das unidades do ambiente.
@@ -511,10 +505,7 @@ class MetricsRecorder:
             "messages_by_type": dict(sorted(by_type.items())),
         }
 
-    # ------------------------------------------------------------------
     # Saída
-    # ------------------------------------------------------------------
-
     def save(self, folder):
         """
         Escreve os resultados em CSV, numa pasta.

@@ -37,10 +37,7 @@ SEGUNDOS_ANTES_ACIDENTE = 3
 TIPOS_ACIDENTE = ("smartwatch", "witness")
 
 
-# ----------------------------------------------------------------------
 # Auxiliares
-# ----------------------------------------------------------------------
-
 def jid(name, domain):
     """
     Constrói o JID de um agente.
@@ -145,10 +142,7 @@ def validate_scenario(cfg):
             raise ValueError("O campo 'at' de um acidente não pode ser negativo.")
 
 
-# ----------------------------------------------------------------------
 # Construção (JSON -> objetos)
-# ----------------------------------------------------------------------
-
 def build_environment(cfg):
     """
     Cria o ambiente (mapa e hospitais) do cenário.
@@ -364,10 +358,7 @@ def build_smartwatches(cfg):
     }
 
 
-# ----------------------------------------------------------------------
 # Passos da simulação
-# ----------------------------------------------------------------------
-
 async def start_agents(
     env, dispatcher, verification,
     ambulances, police, witnesses, smartwatches
@@ -518,10 +509,7 @@ async def stop_agents(agents):
             await agent.stop()
 
 
-# ----------------------------------------------------------------------
 # Pontos de entrada
-# ----------------------------------------------------------------------
-
 async def run(cfg, metrics=None):
     """
     Constrói e corre a simulação completa de um cenário.

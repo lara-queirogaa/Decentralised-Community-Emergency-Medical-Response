@@ -39,9 +39,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-# --------------------------------------------------------------------------
 # Argumentos (antes de importar pygame, para poder forçar modo sem janela)
-# --------------------------------------------------------------------------
 parser = argparse.ArgumentParser(description="Interface gráfica da simulação.")
 parser.add_argument("scenario", nargs="?", type=Path,
                     help="JSON do cenário (se omitido, abre o menu)")
@@ -63,9 +61,7 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 import pygame  # noqa: E402
 import pygame.gfxdraw as gfx  # noqa: E402
 
-# --------------------------------------------------------------------------
 # Cores e constantes
-# --------------------------------------------------------------------------
 BG = (9, 13, 24)
 PANEL = (15, 22, 38)
 CARD = (23, 33, 54)
@@ -103,6 +99,16 @@ _font_cache = {}
 
 
 def font(size, bold=False):
+    """
+    Devolve uma fonte do pygame, guardada em cache para não a recriar.
+
+    Args:
+        size (int): Tamanho da letra, em píxeis.
+        bold (bool): True para negrito.
+
+    Returns:
+        pygame.font.Font: A fonte pedida.
+    """
     key = (size, bold)
     if key not in _font_cache:
         _font_cache[key] = pygame.font.SysFont(
@@ -112,6 +118,22 @@ def font(size, bold=False):
 
 
 def text(surf, s, size, color, pos, anchor="topleft", bold=False):
+    """
+    Desenha texto numa superfície.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        s (object): O que escrever (é convertido para str).
+        size (int): Tamanho da letra, em píxeis.
+        color (tuple[int, ...]): Cor do texto.
+        pos (tuple[float, float]): Posição do ponto de ancoragem.
+        anchor (str): Ponto do texto que fica em pos, por exemplo "topleft",
+            "center" ou "midright".
+        bold (bool): True para negrito.
+
+    Returns:
+        pygame.Rect: Retângulo ocupado pelo texto.
+    """
     img = font(size, bold).render(str(s), True, color)
     r = img.get_rect(**{anchor: pos})
     surf.blit(img, r)
@@ -119,7 +141,18 @@ def text(surf, s, size, color, pos, anchor="topleft", bold=False):
 
 
 def fit(s, size, width, bold=False):
-    """Corta o texto com '…' para caber em 'width' píxeis."""
+    """
+    Corta o texto com "…" para caber numa largura.
+
+    Args:
+        s (str): Texto original.
+        size (int): Tamanho da letra, em píxeis.
+        width (int): Largura máxima, em píxeis.
+        bold (bool): True para negrito.
+
+    Returns:
+        str: O próprio texto, se couber, ou uma versão cortada com "…".
+    """
     f = font(size, bold)
     if f.size(s)[0] <= width:
         return s
@@ -129,6 +162,17 @@ def fit(s, size, width, bold=False):
 
 
 def wrap(s, size, width):
+    """
+    Parte um texto em linhas que cabem numa largura.
+
+    Args:
+        s (object): Texto a partir (é convertido para str).
+        size (int): Tamanho da letra, em píxeis.
+        width (int): Largura máxima de cada linha, em píxeis.
+
+    Returns:
+        list[str]: As linhas, partidas nos espaços.
+    """
     f = font(size)
     lines, cur = [], ""
     for word in str(s).split():
@@ -144,14 +188,46 @@ def wrap(s, size, width):
 
 
 def lerp(a, b, t):
+    """
+    Interpola linearmente entre dois valores.
+
+    Args:
+        a (float): Valor inicial.
+        b (float): Valor final.
+        t (float): Fração do percurso, de 0 (a) a 1 (b).
+
+    Returns:
+        float: O valor interpolado.
+    """
     return a + (b - a) * t
 
 
 def with_alpha(c, a):
+    """
+    Junta um canal de transparência a uma cor.
+
+    Args:
+        c (tuple[int, ...]): Cor, com pelo menos (r, g, b).
+        a (float): Transparência, de 0 a 255. Valores fora do intervalo são
+            cortados.
+
+    Returns:
+        tuple[int, int, int, int]: A cor como (r, g, b, a).
+    """
     return (c[0], c[1], c[2], max(0, min(255, int(a))))
 
 
 def circle(surf, color, c, r, alpha=255):
+    """
+    Desenha um círculo preenchido e com contorno suavizado.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        color (tuple[int, ...]): Cor do círculo.
+        c (tuple[float, float]): Centro.
+        r (float): Raio, em píxeis (no mínimo 1).
+        alpha (int): Transparência, de 0 a 255.
+    """
     r = max(1, int(r))
     x, y = int(c[0]), int(c[1])
     col = (*color[:3], alpha)
@@ -160,20 +236,57 @@ def circle(surf, color, c, r, alpha=255):
 
 
 def ring(surf, color, c, r, w=2, alpha=255):
+    """
+    Desenha uma circunferência (só o contorno).
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        color (tuple[int, ...]): Cor da circunferência.
+        c (tuple[float, float]): Centro.
+        r (float): Raio, em píxeis (no mínimo 1).
+        w (int): Espessura do traço.
+        alpha (int): Transparência, de 0 a 255.
+    """
     pygame.draw.circle(surf, (*color[:3], alpha), (int(c[0]), int(c[1])), max(1, int(r)), w)
 
 
 def rrect(surf, color, rect, radius, w=0):
+    """
+    Desenha um retângulo de cantos arredondados.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        color (tuple[int, ...]): Cor do retângulo.
+        rect (pygame.Rect | tuple): Posição e tamanho.
+        radius (float): Raio dos cantos.
+        w (int): Espessura do traço. Com 0, o retângulo vem preenchido.
+    """
     pygame.draw.rect(surf, color, rect, w, border_radius=int(radius))
 
 
-# --------------------------------------------------------------------------
 # Recolha de dados da simulação (sem tocar nos agentes)
-# --------------------------------------------------------------------------
 class Recorder:
-    """Guarda o que a interface precisa: objetos da simulação, mensagens, log."""
+    """
+    Guarda o que a interface precisa da simulação: os objetos criados pelo
+    main, as mensagens trocadas e o texto impresso.
+
+    Attributes:
+        env (Environment | None): Ambiente da simulação.
+        dispatcher (DispatcherAgent | None): Dispatcher da simulação.
+        verification (VerificationAgent | None): Agente de verificação.
+        inbox (collections.deque): Mensagens ainda por tratar, cada uma com
+            (instante, remetente, destinatário, conteúdo JSON).
+        log (collections.deque): Últimas 500 linhas impressas, cada uma com
+            (instante, texto).
+        msg_count (int): Número de mensagens vistas até agora.
+        metrics (MetricsRecorder | None): Recolhedor de métricas ao vivo.
+        t0 (float): Instante em que a interface começou a contar o tempo.
+    """
 
     def __init__(self):
+        """
+        Cria o recolhedor vazio. O relógio começa a contar agora.
+        """
         self.env = None
         self.dispatcher = None
         self.verification = None
@@ -184,16 +297,48 @@ class Recorder:
         self.t0 = time.monotonic()
 
     def now(self):
+        """
+        Mede o tempo desde o início da simulação.
+
+        Returns:
+            float: Segundos desde t0.
+        """
         return time.monotonic() - self.t0
 
 
 class Tee(io.TextIOBase):
-    """Copia o que o programa faz print para o painel de log (e para o terminal)."""
+    """
+    Copia o que o programa imprime para o painel de registo, sem deixar de o
+    mostrar no terminal.
+
+    Attributes:
+        orig (io.TextIOBase): Saída original (o terminal).
+        rec (Recorder): Recolhedor que guarda as linhas.
+        buf (str): Texto recebido que ainda não formou uma linha completa.
+    """
 
     def __init__(self, orig, rec):
+        """
+        Cria o duplicador de saída.
+
+        Args:
+            orig (io.TextIOBase): Saída original, para onde o texto continua a ir.
+            rec (Recorder): Recolhedor que guarda as linhas.
+        """
         self.orig, self.rec, self.buf = orig, rec, ""
 
     def write(self, s):
+        """
+        Escreve no terminal e guarda as linhas completas no registo.
+
+        Linhas vazias não são guardadas.
+
+        Args:
+            s (str): Texto impresso.
+
+        Returns:
+            int: Número de caracteres recebidos.
+        """
         self.orig.write(s)
         self.buf += s
         while "\n" in self.buf:
@@ -203,11 +348,25 @@ class Tee(io.TextIOBase):
         return len(s)
 
     def flush(self):
+        """
+        Força a escrita da saída original.
+        """
         self.orig.flush()
 
 
 def short_id(e):
-    """witness_001 -> W1, sensor_001 -> S1 (os outros ids já são curtos)."""
+    """
+    Encurta o identificador de um agente para o mostrar no mapa.
+
+    Por exemplo, "witness_001" passa a "W1" e "sensor_001" a "S1". Os outros
+    identificadores (das viaturas) já são curtos.
+
+    Args:
+        e (Ent): Entidade desenhada no mapa.
+
+    Returns:
+        str: O identificador curto.
+    """
     digits = "".join(ch for ch in str(e.id) if ch.isdigit()).lstrip("0") or "0"
     if e.kind == "witness":
         return "W" + digits
@@ -217,14 +376,33 @@ def short_id(e):
 
 
 def bare(jid):
+    """
+    Tira o recurso de um JID.
+
+    Args:
+        jid (str): JID, possivelmente com "/recurso" no fim.
+
+    Returns:
+        str: O JID sem o recurso.
+    """
     return str(jid).split("/")[0]
 
 
 def install_hooks(rec, sim, fix_dispatcher):
     """
-    Liga a interface à simulação sem alterar os ficheiros do grupo:
-      * Container.send  -> regista todas as mensagens entre agentes
-      * sim.build_*     -> guarda o Environment, o Dispatcher e a Verification
+    Liga a interface à simulação sem alterar os ficheiros do grupo.
+
+    Intercepta Container.send, para registar todas as mensagens entre agentes,
+    e substitui as funções build_environment, build_dispatcher e
+    build_verification do main, para guardar o ambiente, o dispatcher e a
+    verificação. Também faz com que o texto impresso passe para o painel de
+    registo.
+
+    Args:
+        rec (Recorder): Recolhedor que guarda o que se vai vendo.
+        sim (module): Módulo main, cujas funções de construção são trocadas.
+        fix_dispatcher (bool): Se True, liga o dispatcher ao ambiente (a linha
+            que falta no main original).
     """
     from spade.container import Container
 
@@ -266,13 +444,42 @@ def install_hooks(rec, sim, fix_dispatcher):
     sys.stdout = Tee(sys.stdout, rec)
 
 
-# --------------------------------------------------------------------------
 # Estado visual (o que está a acontecer no ecrã)
-# --------------------------------------------------------------------------
 class Ent:
-    """Uma coisa desenhada no mapa (um agente)."""
+    """
+    Uma coisa desenhada no mapa, correspondente a um agente.
+
+    Attributes:
+        kind (str): Tipo do agente: "witness", "smartwatch", "ambulance" ou
+            "police".
+        agent (Agent): O agente SPADE.
+        jid (str): JID do agente, sem recurso.
+        id (str): Identificador do agente (unit_id, witness_id ou sensor_id).
+        vpos (tuple[float, float]): Posição desenhada, em células. Vai mudando
+            durante uma viagem.
+        anim (dict | None): Animação da viagem em curso, com "pts", "dur",
+            "cum", "t0" e "total". É None se estiver parada.
+        heading (tuple[float, float]): Direção em que anda, para orientar a
+            viatura.
+        status (str): Último estado reportado ao dispatcher.
+        pending (dict[str, tuple]): Destino de cada ordem recebida, por
+            incidente.
+        cancel_return (bool): True se a ambulância está a voltar por a missão
+            ter sido cancelada.
+        cpr (bool): True enquanto a testemunha está a fazer RCP.
+        cpr_target (tuple | None): Posição da vítima a quem faz RCP.
+        dest (tuple[float, float] | None): Destino da viagem atual.
+    """
 
     def __init__(self, kind, agent):
+        """
+        Cria a entidade a partir de um agente.
+
+        Args:
+            kind (str): Tipo do agente: "witness", "smartwatch", "ambulance" ou
+                "police".
+            agent (Agent): O agente SPADE.
+        """
         self.kind = kind
         self.agent = agent
         self.jid = bare(agent.jid)
@@ -291,15 +498,51 @@ class Ent:
 
     @property
     def moving(self):
+        """
+        Indica se a entidade está em movimento.
+
+        Returns:
+            bool: True se tiver uma animação de viagem em curso.
+        """
         return self.anim is not None
 
 
 class Visual:
+    """
+    Estado visual da simulação: o que está a acontecer no ecrã.
+
+    Transforma as mensagens trocadas entre agentes em bolinhas a viajar,
+    anéis, balões de fala e cartões de incidente, e anima as viaturas.
+
+    Attributes:
+        STATUS_PT (dict[str, str]): Tradução dos estados das viaturas.
+        rec (Recorder): Recolhedor de onde vêm as mensagens.
+        ents (dict[int, Ent]): Entidades desenhadas, por id do objeto agente.
+        by_jid (dict[str, Ent | str]): Entidade de cada JID, ou "dispatcher" e
+            "verification" para os dois agentes que não vivem no mapa.
+        dots (list[dict]): Mensagens a viajar entre dois agentes.
+        pulses (list[dict]): Anéis de chegada.
+        bubbles (list[dict]): Balões de fala.
+        incidents (collections.OrderedDict): Cartão de cada incidente, por
+            identificador.
+        hq (dict[str, tuple[float, float]]): Posição, em píxeis, dos dois
+            agentes que não vivem no mapa.
+        next_bubble (float): Instante a partir do qual pode aparecer o próximo
+            balão.
+        finished_at (float | None): Instante em que a simulação terminou.
+        stats (dict[str, int]): Incidentes "confirmed" e "false" vistos.
+    """
     STATUS_PT = {"en_route": "a caminho", "on_scene": "no local",
                  "returning": "a regressar", "available": "livre",
                  "rejected": "ocupada"}
 
     def __init__(self, rec):
+        """
+        Cria o estado visual vazio.
+
+        Args:
+            rec (Recorder): Recolhedor de onde vêm as mensagens.
+        """
         self.rec = rec
         self.ents = {}                # id(agent) -> Ent
         self.by_jid = {}              # jid -> Ent ou 'dispatcher'/'verification'
@@ -312,8 +555,12 @@ class Visual:
         self.finished_at = None
         self.stats = {"confirmed": 0, "false": 0}
 
-    # --- sincronização com os agentes -------------------------------------
+    # sincronização com os agentes
     def sync(self):
+        """
+        Regista as entidades que ainda não existiam e os JIDs dos agentes que
+        não vivem no mapa.
+        """
         env = self.rec.env
         if env is None:
             return
@@ -329,16 +576,49 @@ class Visual:
             self.by_jid[bare(self.rec.verification.jid)] = "verification"
 
     def ent_list(self, *kinds):
+        """
+        Lista as entidades de certos tipos.
+
+        Args:
+            *kinds (str): Tipos pretendidos, por exemplo "ambulance" e "police".
+
+        Returns:
+            list[Ent]: As entidades desses tipos.
+        """
         return [e for e in self.ents.values() if e.kind in kinds]
 
-    # --- posição de qualquer coisa (agente ou HQ) em células ----------------
+    # posição de qualquer coisa (agente ou HQ) em células
     def cell_pos(self, key):
+        """
+        Devolve a posição, em células, de uma entidade.
+
+        Args:
+            key (Ent | str): Entidade, ou o nome de um agente que não vive no
+                mapa.
+
+        Returns:
+            tuple[float, float] | None: A posição, ou None se key não for uma
+                entidade.
+        """
         if isinstance(key, Ent):
             return key.vpos
         return None
 
-    # --- eventos ----------------------------------------------------------
+    # eventos
     def bubble(self, key, msg, color, now, dur=2.3):
+        """
+        Cria um balão de fala.
+
+        Os balões novos são escalonados, no máximo um a cada 0.45 segundos, para
+        dar tempo de os ler, e cada agente só mantém o balão mais recente.
+
+        Args:
+            key (Ent | str): Quem fala.
+            msg (str): O que diz.
+            color (tuple[int, ...]): Cor do balão.
+            now (float): Instante atual, em segundos.
+            dur (float): Duração do balão, em segundos.
+        """
         same = [b for b in self.bubbles if b["key"] is key]
         for old in same[:-1]:
             self.bubbles.remove(old)
@@ -349,6 +629,17 @@ class Visual:
                              "t0": t0, "dur": dur})
 
     def card(self, incident_id, now):
+        """
+        Devolve o cartão de um incidente, criando-o se ainda não existir.
+
+        Args:
+            incident_id (str): Identificador do incidente.
+            now (float): Instante atual, em segundos.
+
+        Returns:
+            dict: Cartão, com "id", "origin", "source", "conf", "rep", "urgent",
+                "state", "score", "votes", "units", "cpr", "loc" e "t0".
+        """
         c = self.incidents.get(incident_id)
         if c is None:
             c = {"id": incident_id, "origin": "?", "source": "?", "conf": None,
@@ -359,6 +650,18 @@ class Visual:
         return c
 
     def handle(self, ev, now):
+        """
+        Transforma uma mensagem entre agentes em efeitos visuais.
+
+        Cria a bolinha que viaja entre os dois agentes e, conforme o tipo da
+        mensagem, atualiza o cartão do incidente, abre um balão e arranca ou
+        cancela a viagem de uma viatura.
+
+        Args:
+            ev (tuple): Mensagem, com (instante, remetente, destinatário,
+                conteúdo JSON).
+            now (float): Instante atual, em segundos.
+        """
         t, sender, to, data = ev
         kind = data.get("message_type", "?")
         src, dst = self.by_jid.get(sender), self.by_jid.get(to)
@@ -449,9 +752,19 @@ class Visual:
             self.bubble(dst, "reputação +" if good else "reputação −",
                         GREEN if good else RED, now, 2.4)
 
-    # --- movimento das viaturas ---------------------------------------------
+    # movimento das viaturas
     def start_move(self, e, dest, now):
-        """Calcula o percurso (o mesmo que a viatura usa) e anima-o."""
+        """
+        Calcula o percurso de uma viatura e anima-o.
+
+        Usa o mesmo caminho que a viatura segue na simulação, e o mesmo custo por
+        rua, por isso o tempo da animação coincide com o da viagem.
+
+        Args:
+            e (Ent): Viatura que parte.
+            dest (tuple[float, float]): Destino, em células.
+            now (float): Instante atual, em segundos.
+        """
         env = self.rec.env
         speed = getattr(e.agent, "speed", 2.0)
         start = tuple(e.agent.location)
@@ -472,6 +785,18 @@ class Visual:
         e.dest = tuple(map(float, dest))
 
     def set_anim(self, e, pts, durs, now):
+        """
+        Define a animação de uma entidade a partir dos pontos do percurso.
+
+        Os troços sem duração são ignorados. Se não sobrar nenhum, a entidade fica
+        no último ponto.
+
+        Args:
+            e (Ent): Entidade a animar.
+            pts (list[tuple[float, float]]): Pontos do percurso, em células.
+            durs (list[float]): Duração de cada troço, em segundos.
+            now (float): Instante atual, em segundos.
+        """
         keep = [(p, d) for p, d in zip(pts[1:], durs) if d > 1e-6]
         pts2, durs2, cum = [pts[0]], [], [0.0]
         for p, d in keep:
@@ -484,6 +809,16 @@ class Visual:
             e.vpos = pts[-1]
 
     def anim_state(self, e, now):
+        """
+        Calcula onde está uma entidade a meio da sua animação.
+
+        Args:
+            e (Ent): Entidade com uma animação em curso.
+            now (float): Instante atual, em segundos.
+
+        Returns:
+            tuple: (posição, índice do troço, fração do troço já feita, terminou).
+        """
         a = e.anim
         t = now - a["t0"]
         if t >= a["total"]:
@@ -495,6 +830,12 @@ class Visual:
         return (lerp(p0[0], p1[0], f), lerp(p0[1], p1[1], f)), i, f, False
 
     def update_units(self, now):
+        """
+        Faz avançar a posição e a direção de todas as entidades em movimento.
+
+        Args:
+            now (float): Instante atual, em segundos.
+        """
         for e in self.ents.values():
             if e.anim:
                 pos, i, f, done = self.anim_state(e, now)
@@ -509,6 +850,18 @@ class Visual:
                     e.anim = None
 
     def unit_status(self, e, data, now):
+        """
+        Reage ao estado que uma viatura reporta ao dispatcher.
+
+        Arranca a viagem ao local ("en_route"), marca a chegada ("on_scene"),
+        faz a ambulância regressar ao hospital ("returning"), repõe-na no hospital
+        ("available") ou avisa que está ocupada ("rejected").
+
+        Args:
+            e (Ent): Viatura que reportou.
+            data (dict): Mensagem "unit_status".
+            now (float): Instante atual, em segundos.
+        """
         status = data.get("status")
         e.status = status
         iid = data.get("incident_id")
@@ -533,6 +886,17 @@ class Visual:
             self.bubble(e, "Estou ocupada", GREY, now)
 
     def cancel_unit(self, e, iid, now):
+        """
+        Reage ao cancelamento de uma missão.
+
+        Uma ambulância a caminho volta pelo mesmo percurso por onde veio. Uma
+        viatura de polícia fica onde está.
+
+        Args:
+            e (Ent): Viatura cuja missão foi cancelada.
+            iid (str): Identificador do incidente.
+            now (float): Instante atual, em segundos.
+        """
         if e.anim and e.status == "en_route":
             if e.kind == "ambulance":
                 # volta pelo mesmo caminho por onde veio
@@ -547,11 +911,19 @@ class Visual:
         self.bubble(e, "Missão cancelada", GREY, now)
 
 
-# --------------------------------------------------------------------------
 # Desenho: mapa
-# --------------------------------------------------------------------------
 def render_static(env, cs):
-    """Desenha a parte do mapa que não se mexe: estradas, edifícios, hospitais."""
+    """
+    Desenha a parte do mapa que não se mexe: estradas, edifícios, hospitais e
+    estradas cortadas.
+
+    Args:
+        env (Environment): Ambiente, de onde vem a matriz do mapa.
+        cs (int): Tamanho de cada célula, em píxeis.
+
+    Returns:
+        pygame.Surface: Imagem do mapa inteiro.
+    """
     gw, gh = env.width, env.height
     surf = pygame.Surface((gw * cs, gh * cs))
     surf.fill(ROAD)
@@ -619,8 +991,18 @@ def render_static(env, cs):
     return surf
 
 
-# ---- ícones --------------------------------------------------------------
+# ícones
 def draw_witness(surf, c, cs, color=GREEN, label=None):
+    """
+    Desenha o ícone de uma testemunha.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        c (tuple[float, float]): Centro, em píxeis.
+        cs (float): Tamanho de uma célula, em píxeis.
+        color (tuple[int, ...]): Cor da figura.
+        label (str | None): Não é usado.
+    """
     r = cs * .17
     circle(surf, (14, 80, 60), (c[0], c[1] + cs * .02), cs * .33, 140)
     pygame.draw.circle(surf, color, (int(c[0]), int(c[1] - cs * .14)), int(r))
@@ -629,6 +1011,16 @@ def draw_witness(surf, c, cs, color=GREEN, label=None):
 
 
 def draw_watch(surf, c, cs, color=BLUE, t=0):
+    """
+    Desenha o ícone de um smartwatch, com o ponteiro dos segundos a rodar.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        c (tuple[float, float]): Centro, em píxeis.
+        cs (float): Tamanho de uma célula, em píxeis.
+        color (tuple[int, ...]): Cor da caixa do relógio.
+        t (float): Tempo, em segundos, que faz rodar o ponteiro.
+    """
     w, h = cs * .32, cs * .44
     rrect(surf, (30, 41, 70), (c[0] - w * .42, c[1] - h * .72, w * .84, h * 1.44), cs * .06)
     rrect(surf, color, (c[0] - w / 2, c[1] - h / 2, w, h), cs * .08)
@@ -639,6 +1031,20 @@ def draw_watch(surf, c, cs, color=BLUE, t=0):
 
 
 def draw_car(surf, c, cs, kind, heading, moving, t):
+    """
+    Desenha uma viatura, ambulância ou polícia, com a sirene a piscar quando
+    está em movimento.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        c (tuple[float, float]): Centro, em píxeis.
+        cs (float): Tamanho de uma célula, em píxeis.
+        kind (str): "ambulance" ou "police".
+        heading (tuple[float, float]): Direção em que anda. Define se a viatura
+            é desenhada na horizontal ou na vertical.
+        moving (bool): True se está em movimento (a sirene pisca).
+        t (float): Tempo, em segundos, que dá o ritmo da sirene.
+    """
     horiz = abs(heading[0]) >= abs(heading[1])
     L, W = cs * .74, cs * .42
     w, h = (L, W) if horiz else (W, L)
@@ -675,6 +1081,16 @@ def draw_car(surf, c, cs, kind, heading, moving, t):
 
 
 def draw_heart(surf, c, size, color, alpha=255):
+    """
+    Desenha um coração.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        c (tuple[float, float]): Centro, em píxeis.
+        size (float): Tamanho do coração, em píxeis.
+        color (tuple[int, ...]): Cor do coração.
+        alpha (int): Transparência, de 0 a 255.
+    """
     s = size
     pygame.draw.circle(surf, (*color, alpha), (int(c[0] - s * .25), int(c[1] - s * .1)), int(s * .28))
     pygame.draw.circle(surf, (*color, alpha), (int(c[0] + s * .25), int(c[1] - s * .1)), int(s * .28))
@@ -684,6 +1100,18 @@ def draw_heart(surf, c, size, color, alpha=255):
 
 
 def dashed(surf, color, p0, p1, dash=7, gap=6, w=2):
+    """
+    Desenha uma linha tracejada entre dois pontos.
+
+    Args:
+        surf (pygame.Surface): Superfície onde desenhar.
+        color (tuple[int, ...]): Cor da linha.
+        p0 (tuple[float, float]): Ponto inicial, em píxeis.
+        p1 (tuple[float, float]): Ponto final, em píxeis.
+        dash (float): Comprimento de cada traço.
+        gap (float): Espaço entre traços.
+        w (int): Espessura da linha.
+    """
     d = math.dist(p0, p1)
     if d < 1:
         return
@@ -696,11 +1124,50 @@ def dashed(surf, color, p0, p1, dash=7, gap=6, w=2):
         s += dash + gap
 
 
-# --------------------------------------------------------------------------
 # A aplicação gráfica
-# --------------------------------------------------------------------------
 class App:
+    """
+    A aplicação gráfica: janela, disposição do ecrã e desenho de cada quadro.
+
+    Attributes:
+        cfg (dict): Cenário em simulação.
+        path (Path): Ficheiro do cenário.
+        rec (Recorder): Recolhedor com os objetos da simulação.
+        vis (Visual): Estado visual, que alimenta o desenho.
+        screen (pygame.Surface): Janela.
+        clock (pygame.time.Clock): Relógio do ciclo principal.
+        static (pygame.Surface | None): Imagem do mapa estático, guardada.
+        static_key (tuple | None): Tamanho da célula e matriz com que a imagem
+            foi feita, para saber quando a refazer.
+        show_log (bool): True se o painel mostra o registo dos agentes.
+        show_metrics (bool): True se o cartão de métricas está visível.
+        metrics_cache (tuple | None): (instante, resumo) das métricas, para não
+            as recalcular a cada quadro.
+        map_rect (pygame.Rect): Zona do ecrã ocupada pelo mapa.
+        cs (int): Tamanho de uma célula, em píxeis.
+        flash (object | None): Reservado, não é usado.
+        W (int): Largura da janela, definida em layout().
+        H (int): Altura da janela, definida em layout().
+        head (int): Altura do cabeçalho, definida em layout().
+        foot (int): Altura do rodapé, definida em layout().
+        strip (int): Altura da faixa dos agentes sem posição no mapa, definida
+            em layout().
+        panel_w (int): Largura do painel lateral, definida em layout().
+        panel (pygame.Rect): Painel lateral, definido em layout().
+        side_w (int): Largura da coluna das métricas, definida em layout().
+        strip_rect (pygame.Rect): Faixa dos agentes sem posição no mapa,
+            definida em layout().
+    """
     def __init__(self, cfg, scenario_path, rec, vis):
+        """
+        Cria a janela e o estado da aplicação.
+
+        Args:
+            cfg (dict): Cenário em simulação.
+            scenario_path (Path): Ficheiro do cenário.
+            rec (Recorder): Recolhedor com os objetos da simulação.
+            vis (Visual): Estado visual da simulação.
+        """
         self.cfg, self.path, self.rec, self.vis = cfg, scenario_path, rec, vis
         w, h = (int(v) for v in ARGS.size.lower().split("x"))
         self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
@@ -714,8 +1181,12 @@ class App:
         self.cs = 32
         self.flash = None
 
-    # --- geometria -------------------------------------------------------
+    # geometria
     def layout(self):
+        """
+        Calcula a disposição do ecrã (cabeçalho, rodapé, painel lateral, coluna
+        das métricas e mapa) e o tamanho da célula, para o mapa caber na janela.
+        """
         W, H = self.screen.get_size()
         self.W, self.H = W, H
         self.head = 66
@@ -736,16 +1207,46 @@ class App:
         self.strip_rect = pygame.Rect(0, self.head, W - self.panel_w, self.strip)
 
     def to_px(self, p):
+        """
+        Converte uma posição em células para o centro dessa célula, em píxeis.
+
+        Args:
+            p (tuple[float, float]): Posição, em células.
+
+        Returns:
+            tuple[float, float]: Posição, em píxeis.
+        """
         return (self.map_rect.x + (p[0] + .5) * self.cs,
                 self.map_rect.y + (p[1] + .5) * self.cs)
 
     def key_px(self, key, ents_px):
+        """
+        Devolve a posição, em píxeis, de uma entidade ou de um agente que não vive
+        no mapa.
+
+        Args:
+            key (Ent | str): Entidade, ou "dispatcher" ou "verification".
+            ents_px (dict[int, tuple[float, float]]): Posição desenhada de cada
+                entidade, por id do objeto.
+
+        Returns:
+            tuple[float, float] | None: A posição, ou None se ainda não for
+                conhecida.
+        """
         if isinstance(key, Ent):
             return ents_px.get(id(key), self.to_px(key.vpos))
         return self.vis.hq.get(key)
 
-    # --- quadro ----------------------------------------------------------
+    # quadro
     def draw(self, now):
+        """
+        Desenha um quadro completo: mapa, trânsito, acidentes, percursos, agentes,
+        efeitos, balões, cabeçalho, painel lateral, rodapé, métricas e, no fim da
+        simulação, o aviso final.
+
+        Args:
+            now (float): Instante atual, em segundos.
+        """
         env = self.rec.env
         scr = self.screen
         scr.fill(BG)
@@ -908,9 +1409,19 @@ class App:
         if self.vis.finished_at is not None:
             self.draw_end_banner()
 
-    # --- métricas ao vivo ----------------------------------------------------
+    # métricas ao vivo
     def live_summary(self, now):
-        """Resumo das métricas, recalculado no máximo 2 vezes por segundo."""
+        """
+        Devolve o resumo das métricas da corrida, recalculado no máximo 2 vezes
+        por segundo.
+
+        Args:
+            now (float): Instante atual, em segundos.
+
+        Returns:
+            dict | None: A secção "run" do resumo, ou None se não houver métricas
+                ou o cálculo falhar sem resultado anterior.
+        """
         m = self.rec.metrics
         if m is None:
             return None
@@ -925,7 +1436,12 @@ class App:
         return run
 
     def draw_metrics(self, now):
-        """Cartão com as métricas principais, à esquerda do mapa (tecla M)."""
+        """
+        Desenha o cartão com as métricas principais, à esquerda do mapa (tecla M).
+
+        Args:
+            now (float): Instante atual, em segundos.
+        """
         if not self.side_w:
             return
         run = self.live_summary(now)
@@ -987,7 +1503,14 @@ class App:
             text(scr, ln, 10, DIM, (x + 12, y + 8 + i * 13))
 
     def draw_hq(self, surf, now):
-        """Os dois agentes que não vivem no mapa: Dispatcher e Verificação."""
+        """
+        Desenha os dois agentes que não vivem no mapa: o Dispatcher e a
+        Verificação.
+
+        Args:
+            surf (pygame.Surface): Superfície dos efeitos, por cima do mapa.
+            now (float): Instante atual, em segundos.
+        """
         vis = self.vis
         sr = self.strip_rect
         specs = [("verification", "VERIFICAÇÃO", "valida os alertas", CYAN, .28),
@@ -1013,6 +1536,15 @@ class App:
         # as pulsações extra são desenhadas em fx2 (via vis.pulses)
 
     def draw_bubble(self, c, b, now, slot):
+        """
+        Desenha um balão de fala, que sobe e desvanece-se perto do fim.
+
+        Args:
+            c (tuple[float, float]): Posição, em píxeis, de quem fala.
+            b (dict): Balão, com "key", "text", "color", "t0" e "dur".
+            now (float): Instante atual, em segundos.
+            slot (int): Posição na pilha, quando o mesmo agente tem vários balões.
+        """
         age = now - b["t0"]
         a = 255 if age < b["dur"] - .5 else int(255 * (b["dur"] - age) / .5)
         f = font(12, True)
@@ -1040,8 +1572,15 @@ class App:
         s.blit(img, (9, 11))
         self.screen.blit(s, (x, y - 7 if below else y))
 
-    # --- cabeçalho / rodapé ------------------------------------------------
+    # cabeçalho / rodapé
     def draw_header(self, now):
+        """
+        Desenha o cabeçalho: logótipo, título, nome do cenário, relógio, número
+        de mensagens e estado da simulação.
+
+        Args:
+            now (float): Instante atual, em segundos.
+        """
         scr = self.screen
         pygame.draw.rect(scr, PANEL, (0, 0, self.W, self.head))
         pygame.draw.line(scr, LINE, (0, self.head), (self.W, self.head))
@@ -1076,6 +1615,9 @@ class App:
             x -= w + 8
 
     def draw_footer(self):
+        """
+        Desenha o rodapé: a legenda dos símbolos e as teclas disponíveis.
+        """
         scr = self.screen
         y0 = self.H - self.foot
         pygame.draw.rect(scr, PANEL, (0, y0, self.W, self.foot))
@@ -1110,8 +1652,19 @@ class App:
         hint = "ESC sair   R reiniciar   S captura   L log   M métricas"
         text(scr, hint, 12, DIM, (self.W - 14, cy), "midright")
 
-    # --- painel lateral ----------------------------------------------------
+    # painel lateral
     def section(self, y, title, count=None):
+        """
+        Desenha o título de uma secção do painel lateral.
+
+        Args:
+            y (int): Posição vertical do título, em píxeis.
+            title (str): Título da secção.
+            count (int | None): Número a mostrar à direita, se existir.
+
+        Returns:
+            int: Posição vertical onde começa o conteúdo da secção.
+        """
         scr = self.screen
         x = self.panel.x + 14
         text(scr, title.upper(), 11, DIM, (x, y), bold=True)
@@ -1121,6 +1674,13 @@ class App:
         return y + 22
 
     def draw_panel(self, now):
+        """
+        Desenha o painel lateral: os dois últimos incidentes, as unidades, as
+        pessoas e sensores e, se estiver ativo, o registo dos agentes.
+
+        Args:
+            now (float): Instante atual, em segundos.
+        """
         scr = self.screen
         p = self.panel
         pygame.draw.rect(scr, PANEL, p)
@@ -1197,6 +1757,22 @@ class App:
             scr.set_clip(clip)
 
     def draw_card(self, c, x, y, w, now):
+        """
+        Desenha o cartão de um incidente.
+
+        Mostra o estado, a origem, a confiança, os votos das testemunhas, a
+        pontuação, as unidades enviadas e o RCP.
+
+        Args:
+            c (dict): Cartão do incidente.
+            x (int): Posição horizontal do cartão, em píxeis.
+            y (int): Posição vertical do cartão, em píxeis.
+            w (int): Largura do cartão, em píxeis.
+            now (float): Instante atual, em segundos.
+
+        Returns:
+            int: Posição vertical do fundo do cartão.
+        """
         scr = self.screen
         h = 92
         r = pygame.Rect(x, y, w, h)
@@ -1250,6 +1826,9 @@ class App:
         return r.bottom
 
     def draw_end_banner(self):
+        """
+        Desenha o aviso de que a simulação terminou, com o resumo dos incidentes.
+        """
         s = self.vis.stats
         r = pygame.Rect(0, 0, min(620, self.map_rect.w), 74)
         r.midbottom = (self.map_rect.centerx, self.map_rect.bottom - 14)
@@ -1263,6 +1842,15 @@ class App:
              13, DIM, (r.centerx, r.y + 50), "center")
 
     def save_shot(self, name):
+        """
+        Guarda uma captura do ecrã.
+
+        Args:
+            name (str): Nome do ficheiro da captura.
+
+        Returns:
+            Path: Caminho do ficheiro guardado.
+        """
         self.ARGS_dir = ARGS.shot_dir
         ARGS.shot_dir.mkdir(parents=True, exist_ok=True)
         path = ARGS.shot_dir / name
@@ -1271,10 +1859,21 @@ class App:
         return path
 
 
-# --------------------------------------------------------------------------
 # Ecrãs auxiliares
-# --------------------------------------------------------------------------
 def message_screen(title, lines, color=AMBER, footer="ESC para sair"):
+    """
+    Mostra um ecrã com uma mensagem e espera que o utilizador responda.
+
+    Args:
+        title (str): Título da mensagem.
+        lines (list[str]): Linhas de texto.
+        color (tuple[int, ...]): Cor do título e da moldura.
+        footer (str): Texto no fundo, a dizer que teclas se podem usar.
+
+    Returns:
+        bool: True se o utilizador carregou em R (tentar outra vez), False se
+            saiu ou se a janela está desativada (modo headless).
+    """
     size = tuple(int(v) for v in ARGS.size.lower().split("x"))
     scr = pygame.display.set_mode(size, pygame.RESIZABLE)
     clock = pygame.time.Clock()
@@ -1301,6 +1900,16 @@ def message_screen(title, lines, color=AMBER, footer="ESC para sair"):
 
 
 def xmpp_up(domain, port=5222):
+    """
+    Verifica se o servidor XMPP está a aceitar ligações.
+
+    Args:
+        domain (str): Domínio do servidor.
+        port (int): Porta do servidor.
+
+    Returns:
+        bool: True se foi possível ligar.
+    """
     host = "localhost" if domain in ("localhost", "127.0.0.1") else domain
     try:
         with socket.create_connection((host, port), timeout=1.5):
@@ -1310,7 +1919,12 @@ def xmpp_up(domain, port=5222):
 
 
 def menu():
-    """Lista os cenários; ao escolher um abre-o noutro processo."""
+    """
+    Mostra a lista de cenários e, ao escolher um, abre-o noutro processo.
+
+    Mostra os cenários numerados e, a seguir, as experiências do relatório
+    (E1, E2, E3). A lista desliza com a roda do rato.
+    """
     size = tuple(int(v) for v in ARGS.size.lower().split("x"))
     scr = pygame.display.set_mode(size, pygame.RESIZABLE)
     pygame.display.set_caption("Resposta Médica de Emergência — Escolher cenário")
@@ -1386,10 +2000,22 @@ def menu():
         clock.tick(30)
 
 
-# --------------------------------------------------------------------------
 # Corrida de um cenário
-# --------------------------------------------------------------------------
 async def run_gui(cfg, path):
+    """
+    Corre um cenário com a interface gráfica.
+
+    Liga a interface à simulação, arranca-a e, a cada quadro, trata as teclas,
+    as mensagens recebidas e o desenho. No fim pára a simulação com calma.
+
+    Args:
+        cfg (dict): Cenário a simular.
+        path (Path): Ficheiro do cenário.
+
+    Returns:
+        str | tuple: "quit" se o utilizador saiu, "restart" se pediu para
+            reiniciar, ou ("error", exceção) se a simulação falhou.
+    """
     import main as sim
     rec = Recorder()
     install_hooks(rec, sim, fix_dispatcher=not ARGS.original)
@@ -1474,6 +2100,13 @@ async def run_gui(cfg, path):
 
 
 def main():
+    """
+    Ponto de entrada da interface.
+
+    Sem cenário, abre o menu. Com cenário, espera que o servidor XMPP esteja
+    ligado, corre a simulação e, se esta falhar, mostra o erro. O reinício
+    volta a lançar o programa num processo novo.
+    """
     pygame.init()
     if ARGS.scenario is None:
         menu()

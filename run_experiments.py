@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Corre experiências: cenários x valores de um parâmetro x várias sementes.
 
@@ -70,10 +69,7 @@ MARKDOWN_METRICS = [
 ]
 
 
-# ----------------------------------------------------------------------
 # Parâmetros
-# ----------------------------------------------------------------------
-
 def parse_value(text):
     """
     Converte o texto de um valor para o tipo certo.
@@ -148,10 +144,7 @@ def slug(value):
     return str(value).replace("/", "_").replace(" ", "_")
 
 
-# ----------------------------------------------------------------------
 # Execução
-# ----------------------------------------------------------------------
-
 def server_is_up(cfg):
     """
     Confirma que o servidor XMPP do cenário está a aceitar ligações.
@@ -212,10 +205,7 @@ def run_one(scenario_path, run_dir, param, value, seed, timeout):
     return result.returncode == 0 and (run_dir / "runs.csv").exists()
 
 
-# ----------------------------------------------------------------------
 # Resultados
-# ----------------------------------------------------------------------
-
 def to_number(text):
     """
     Converte uma célula de CSV num número.
@@ -370,10 +360,7 @@ def write_markdown(path, summary, param):
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-# ----------------------------------------------------------------------
 # Programa
-# ----------------------------------------------------------------------
-
 def main():
     """
     Lê a linha de comandos, corre as experiências e escreve os resultados.
